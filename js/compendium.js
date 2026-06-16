@@ -339,14 +339,20 @@ console.log('Compendium script loaded');
         typeLabel = res.slot ? res.slot.toUpperCase() : 'ITEM'; 
         if (typeLabel === 'WEAPON') {
             badgeColor = '#b91c1c'; // Red
-            if (res.type) {
-                const wType = res.type.toUpperCase();
-                let typeColor = '#333';
-                if (wType === 'SIMPLE') typeColor = '#4b5563'; // Gray
-                else if (wType === 'MARTIAL') typeColor = '#7f1d1d'; // Dark Red
-                else if (wType === 'GREAT') typeColor = '#78350f'; // Dark Brown
-                else if (wType === 'FOCUS') typeColor = '#312e81'; // Indigo
-                itemTypeBadge = `<div class="card-tag" style="background: ${typeColor}">${wType}</div>`;
+            // Use training field if available, otherwise fall back to type (old format)
+            const trainingValue = res.training || res.type;
+            if (trainingValue) {
+                const wTraining = trainingValue.toUpperCase();
+                let trainingColor = '#333';
+                if (wTraining === 'SIMPLE') trainingColor = '#4b5563'; // Gray
+                else if (wTraining === 'MARTIAL') trainingColor = '#7f1d1d'; // Dark Red
+                else if (wTraining === 'GREAT') trainingColor = '#78350f'; // Dark Brown
+                else if (wTraining === 'FOCUS') trainingColor = '#312e81'; // Indigo
+                itemTypeBadge = `<div class="card-tag" style="background: ${trainingColor}">${wTraining}</div>`;
+            }
+            // If training exists separately, also show weapon type as its own badge
+            if (res.training && res.type) {
+                itemTypeBadge += `<div class="card-tag" style="background: #92400e">${res.type.toUpperCase()}</div>`;
             }
         }
         else if (typeLabel === 'ARMOR') badgeColor = '#1d4ed8'; // Blue
@@ -367,7 +373,7 @@ console.log('Compendium script loaded');
       card.innerHTML = `
         <div class="card-tag-row">${tagBadge}${spellTypeBadge}${itemTypeBadge}<div class="card-tag" style="background: ${badgeColor}">${typeLabel}</div></div>
         <h3 class="card-title">${res.name}</h3>
-          <div class="card-meta">${res.category === 'spell' ? `${res.type ? `Type: ${res.type} | ` : ''}Cost: ${res.cost} | Activation: ${res.actTime} | Range: ${res.range} | Components: ${res.components} | Duration: ${res.duration} | Class: ${res.class}` : res.category === 'item' ? `Rarity: ${res.rarity || 'Common'}${res.type ? ` | Type: ${res.type}` : ''}${res.class ? ` | Class: ${res.class}` : ''}${res.slot ? ` | Slot: ${res.slot}` : ''}` : res.category === 'misc' ? `Type: ${res.type || 'Item'}${res.slot ? ` | Slot: ${res.slot}` : ''}` : (res.category === 'feat' || res.category === 'talent') ? `Requirement: ${res.requirement}` : `${res.cr}`}</div>
+          <div class="card-meta">${res.category === 'spell' ? `${res.type ? `Type: ${res.type} | ` : ''}Cost: ${res.cost} | Activation: ${res.actTime} | Range: ${res.range} | Components: ${res.components} | Duration: ${res.duration} | Class: ${res.class}` : res.category === 'item' ? `Rarity: ${res.rarity || 'Common'}${res.type ? ` | Type: ${res.type}` : ''}${res.training ? ` | Training: ${res.training}` : ''}${res.class ? ` | Class: ${res.class}` : ''}${res.slot ? ` | Slot: ${res.slot}` : ''}` : res.category === 'misc' ? `Type: ${res.type || 'Item'}${res.slot ? ` | Slot: ${res.slot}` : ''}` : (res.category === 'feat' || res.category === 'talent') ? `Requirement: ${res.requirement}` : `${res.cr}`}</div>
         <p class="card-description">${res.description ? res.description.substring(0, 100) + '...' : ''}</p>
       `;
       card.addEventListener('click', () => showDetailModal(res));
@@ -472,6 +478,7 @@ console.log('Compendium script loaded');
           </div>
           <div class="item-metadata-grid">
             ${item.type ? `<div><strong>Type:</strong> ${item.type}</div>` : ''}
+            ${item.training ? `<div><strong>Training:</strong> ${item.training}</div>` : ''}
             ${item.class ? `<div><strong>Class:</strong> ${item.class}</div>` : ''}
             ${item.slot ? `<div><strong>Slot:</strong> ${item.slot}</div>` : ''}
             ${item.defense ? `<div><strong>Defense:</strong> ${item.defense}</div>` : ''}

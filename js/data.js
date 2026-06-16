@@ -5890,7 +5890,8 @@ window.BB_DATABASE = {
     },
     {
       name: "Dagger",
-      type: "Simple",
+      type: "Dagger",
+      training: "Simple",
       rarity: "Common",
       slot: "Weapon",
       grip: "Dual",
@@ -5963,7 +5964,8 @@ window.BB_DATABASE = {
     },
     {
       name: "Rapier",
-      type: "Simple",
+      type: "Thrusting Sword",
+      training: "Simple",
       rarity: "Common",
       slot: "Weapon",
       grip: "Single",
@@ -5976,11 +5978,12 @@ window.BB_DATABASE = {
       techniqueDesc: "When a creature within reach fails to deal Hit Point damage to you, you may use your Reaction to Opportunity Attack that creature without adding your weapon modifier.",
       description: "A slender thrusting sword designed for speed, precision, and deft swordplay. Favored by duelists and agile combatants.",
       weight: "2 lbs.",
-      cost: "15 Gold Pieces (GP)"
+      cost: "15 Gold Pieces"
     },
     {
       name: "Spear",
-      type: "Simple",
+      type: "Spear",
+      training: "Simple",
       rarity: "Common",
       slot: "Weapon",
       grip: "Double",
@@ -5993,11 +5996,12 @@ window.BB_DATABASE = {
       techniqueDesc: "While wielding a shield, the spear becomes Single Grip, and its reach is reduced by half.",
       description: "A versatile polearm with exceptional reach. Effective in formation fighting and capable of being thrown at distant foes.",
       weight: "4 lbs.",
-      cost: "1 Gold Piece (GP)"
+      cost: "1 Gold Piece"
     },
     {
       name: "Mace",
-      type: "Simple",
+      type: "Mace",
+      training: "Simple",
       rarity: "Common",
       slot: "Weapon",
       grip: "Dual",
@@ -6010,11 +6014,12 @@ window.BB_DATABASE = {
       techniqueDesc: "While wielding a mace in both your main hand and off-hand, if your main hand attack is negated by defense, your off-hand attack ignores defense equal to your Strength modifier (minimum 1).",
       description: "A sturdy metal-headed weapon built to crush armor and bone. Simple, reliable, and devastating at close range.",
       weight: "3 lbs.",
-      cost: "5 Gold Pieces (GP)"
+      cost: "5 Gold Pieces"
     },
     {
       name: "Flail",
-      type: "Simple",
+      type: "Flail",
+      training: "Simple",
       rarity: "Common",
       slot: "Weapon",
       grip: "Single",
@@ -6024,14 +6029,15 @@ window.BB_DATABASE = {
       damageBonus: "Strength",
       properties: "",
       technique: "Breach",
-      techniqueDesc: "When you do hit point damage with an Attack, as a Bonus Action, you may wrench a shield aside. Choose a creature within your reach wielding a shield and make a Strength contest against it. On a success, the creature is disarmed of its shield.",
+      techniqueDesc: "When you deal Hit Point damage with an Attack, as a Bonus Action, you may wrench a shield aside. Choose a creature within your reach wielding a shield and make a Strength contest against it. On a success, the creature is disarmed of its shield.",
       description: "A weighted striking weapon connected by a chain, allowing blows to swing around shields and defenses.",
       weight: "4 lbs.",
-      cost: "10 Gold Pieces (GP)"
+      cost: "10 Gold Pieces"
     },
     {
       name: "Maul",
-      type: "Simple",
+      type: "Hammer",
+      training: "Simple",
       rarity: "Common",
       slot: "Weapon",
       grip: "Double",
@@ -6044,11 +6050,12 @@ window.BB_DATABASE = {
       techniqueDesc: "When you deal Hit Point damage to a Large or smaller creature with this weapon, it must succeed on a Strength saving throw (DC equal to 10 plus your weapon modifier) or be knocked prone. A creature can only be affected by Bonk once per round.",
       description: "A massive two-handed hammer capable of delivering crushing impacts. Its weight makes every strike a formidable threat.",
       weight: "8 lbs.",
-      cost: "12 Gold Pieces (GP)"
+      cost: "12 Gold Pieces"
     },
     {
       name: "Hatchet",
-      type: "Simple",
+      type: "Axe",
+      training: "Simple",
       rarity: "Common",
       slot: "Weapon",
       grip: "Dual",
@@ -6061,11 +6068,12 @@ window.BB_DATABASE = {
       techniqueDesc: "While wielding two hatchets, if your Attack deals Hit Point damage, you may use your Reaction after making your off-hand attack to make one additional main-hand attack that deals weapon damage without modifier.",
       description: "A light chopping axe useful for both combat and survival tasks. Easy to wield and effective when thrown.",
       weight: "2 lbs.",
-      cost: "5 Silver Pieces (SP)"
+      cost: "5 Silver Pieces"
     },
     {
       name: "Axe",
-      type: "Simple",
+      type: "Axe",
+      training: "Simple",
       rarity: "Common",
       slot: "Weapon",
       grip: "Single",
@@ -6078,11 +6086,12 @@ window.BB_DATABASE = {
       techniqueDesc: "When you deal Hit Point damage to a creature, you may use your reaction move to an unoccupied space within 5 feet of an adjacent creature. This movement ignores difficult terrain and does not consume your normal movement, though you are affected by any traps or effects you pass through.",
       description: "A balanced one-handed axe that combines cutting power with maneuverability. Favored by warriors and woodsmen alike.",
       weight: "4 lbs.",
-      cost: "5 Gold Pieces (GP)"
+      cost: "5 Gold Pieces"
     },
     {
       name: "Battle Axe",
-      type: "Simple",
+      type: "Axe",
+      training: "Simple",
       rarity: "Common",
       slot: "Weapon",
       grip: "Double",
@@ -6095,11 +6104,12 @@ window.BB_DATABASE = {
       techniqueDesc: "When you deal Hit Point damage with an Attack, deal weapon damage without modifier to all Hostile creatures within 5 feet of your target.",
       description: "A large two-handed axe designed to deliver sweeping, devastating strikes against multiple foes.",
       weight: "7 lbs.",
-      cost: "10 Gold Pieces (GP)"
+      cost: "10 Gold Pieces"
     },
     {
       name: "Bola",
-      type: "Simple",
+      type: "Throwing",
+      training: "Simple",
       rarity: "Common",
       slot: "Weapon",
       grip: "Single",
@@ -6112,11 +6122,12 @@ window.BB_DATABASE = {
       techniqueDesc: "When you make an Opportunity Attack with a bola, target a Large or smaller creature within range. The creature must succeed on a Dexterity saving throw (DC equal to 10 plus your Strength modifier) or be knocked prone. On a successful save, the creature takes half damage instead.",
       description: "Weighted cords crafted to entangle legs and hinder movement. Hunters and skirmishers often use them to bring down prey.",
       weight: "2 lbs.",
-      cost: "1 Gold Piece (GP)"
+      cost: "1 Gold Piece"
     },
     {
       name: "Throwing Knife",
-      type: "Simple",
+      type: "Throwing",
+      training: "Simple",
       rarity: "Common",
       slot: "Weapon",
       grip: "Dual",
@@ -6129,11 +6140,12 @@ window.BB_DATABASE = {
       techniqueDesc: "When wielding Throwing Knives, you can use the Fan weapon technique to strike multiple targets in quick succession. After making a standard attack with your throwing knives, you may use a Bonus Action and or Reaction to deal 2 slashing damage to a target within range.",
       description: "A lightweight blade balanced for accurate throwing. Easy to carry in quantity and quick to deploy.",
       weight: "0.5 lbs.",
-      cost: "3 Silver Pieces (SP)"
+      cost: "3 Silver Pieces"
     },
     {
       name: "Dart",
-      type: "Simple",
+      type: "Throwing",
+      training: "Simple",
       rarity: "Common",
       slot: "Weapon",
       grip: "Dual",
@@ -6146,11 +6158,12 @@ window.BB_DATABASE = {
       techniqueDesc: "When wielding darts, you may retrieve a dart from your pack or belt as part of your attack, allowing you to throw multiple darts in a single encounter without extra preparation.",
       description: "A small, aerodynamic projectile designed for rapid throwing. Simple, inexpensive, and effective at short range.",
       weight: "0.25 lbs.",
-      cost: "1 Silver Piece (SP)"
+      cost: "1 Bronze Piece"
     },
     {
       name: "Short Bow",
-      type: "Simple",
+      type: "Bow",
+      training: "Simple",
       rarity: "Common",
       slot: "Weapon",
       grip: "Double",
@@ -6163,11 +6176,12 @@ window.BB_DATABASE = {
       techniqueDesc: "When you Disengage while wielding a shortbow, you may make one ranged weapon attack against a creature within 15 feet. This attack deals weapon damage without adding modifiers.",
       description: "A compact bow favored by hunters and scouts. Its smaller size allows for quick shots and easy transport.",
       weight: "3 lbs.",
-      cost: "5 Gold Pieces (GP)"
+      cost: "5 Gold Pieces"
     },
     {
       name: "Long Bow",
-      type: "Simple",
+      type: "Bow",
+      training: "Simple",
       rarity: "Common",
       slot: "Weapon",
       grip: "Double",
@@ -6180,7 +6194,7 @@ window.BB_DATABASE = {
       techniqueDesc: "As a Bonus Action, you brace and draw an arrow with extra force. The next attack you make with a longbow before the end of your turn adds your Strength modifier to the damage roll.",
       description: "A powerful bow capable of striking targets at great distances. Skilled archers can unleash deadly volleys from afar.",
       weight: "5 lbs.",
-      cost: "10 Gold Pieces (GP)"
+      cost: "10 Gold Pieces"
     },
     {
       name: "Beak Mask",
