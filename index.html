@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Beasts & Bounties - Digital Tabletop Guild</title>
+  <!-- Google Fonts: Outfit (For Headings) & Inter (For Body) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <!-- Stylesheet -->
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+  <!-- Navigation Bar -->
+  <nav class="navbar glass">
+    <div class="navbar-container">
+      <a href="#/" class="nav-brand">
+        <span class="brand-b">B</span>easts <span class="brand-amp">&</span> <span class="brand-b">B</span>ounties
+      </a>
+      
+      <button class="mobile-menu-btn" id="mobile-menu-toggle" aria-label="Toggle navigation">
+        <span class="menu-bar"></span>
+        <span class="menu-bar"></span>
+        <span class="menu-bar"></span>
+      </button>
+
+      <ul class="nav-links-list">
+        <li><a href="#/" class="nav-link active">Dashboard</a></li>
+        <li><a href="#/campaign" class="nav-link">Campaign</a></li>
+        <li><a href="#/characters" class="nav-link">Characters</a></li>
+        <li><a href="#/builder" class="nav-link">Character Forge</a></li>
+        <li><a href="#/library" class="nav-link">Library</a></li>
+        <li><a href="#/compendium" class="nav-link">Compendium</a></li>
+      </ul>
+
+      <div class="nav-search-box glass">
+        <input type="text" id="nav-search-input" placeholder="Search">
+        <button id="nav-search-submit" class="search-btn">🔍</button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Main View Container (Single Page Application Content Area) -->
+  <main class="main-content" id="main-view-container">
+    <div class="loading-spinner">
+      <div class="spinner"></div>
+      <p>Consulting Guild Archives...</p>
+    </div>
+  </main>
+
+  <!-- Global Toast Container -->
+  <div id="toast-container" class="toast-container"></div>
+
+  <!-- Global Hover Tooltip -->
+  <div id="hover-tooltip" class="hover-tooltip-container" style="display: none; position: absolute; z-index: 100000; pointer-events: none;"></div>
+
+  <script>
+    window.addEventListener('error', function(e) {
+      var errDiv = document.createElement('div');
+      errDiv.style = 'color:red; z-index:99999; position:fixed; top:50px; left:50px; background:black; padding:20px; border:2px solid red; font-size:24px; max-width:80%; word-wrap:break-word;';
+      errDiv.innerHTML = 'ERROR in ' + e.filename + ' at line ' + e.lineno + ':<br>' + e.message;
+      document.body.appendChild(errDiv);
+    });
+  </script>
+
+  <!-- B&B Javascript Modules -->
+  <script src="js/asset-manager.js"></script>
+  <script src="js/data.js"></script>
+  <script src="js/state.js"></script>
+  <script src="js/router.js"></script>
+  <script src="js/dice.js"></script>
+  <script src="js/builder.js"></script>
+  <script src="js/character-sheet.js"></script>
+  <script src="js/library.js"></script>
+  <script src="js/compendium.js"></script>
+  <script src="js/campaign.js"></script>
+  <script src="js/map-editor.js"></script>
+  <script src="js/vtt.js"></script>
+  <script src="js/app.js"></script>
+
+</body>
+</html>

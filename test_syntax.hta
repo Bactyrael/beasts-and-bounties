@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+<HTA:APPLICATION ID="oHTA" APPLICATIONNAME="SyntaxChecker" WINDOWSTATE="minimize" />
+<script>
+window.onerror = function(msg, url, line, col, error) {
+  try {
+    var fso = new ActiveXObject("Scripting.FileSystemObject");
+    var f = fso.CreateTextFile("error.txt", true);
+    f.WriteLine("Error: " + msg + " at line " + line);
+    f.Close();
+  } catch(e) {}
+  window.close();
+};
+</script>
+<script src="js/character-sheet.js"></script>
+<script>
+  try {
+    var fso = new ActiveXObject("Scripting.FileSystemObject");
+    var f = fso.CreateTextFile("error.txt", true);
+    f.WriteLine("Success: No syntax errors detected.");
+    f.Close();
+  } catch(e) {}
+  window.close();
+</script>
+</head>
+<body></body>
+</html>
