@@ -1168,7 +1168,7 @@ window.BB_CHARACTER_SHEET = (() => {
       let armorTrainingList = Array.from(armorTrainingSet).join(", ") || "None";
       let weaponTrainingList = Array.from(weaponTrainingSet).join(", ") || "None";
       return `
-        <div class="equipment-tab-view glass" style="flex: 1; min-height:100%; overflow-y:auto; position:relative; display:flex; flex-direction:column; padding:15px;">
+        <div class="equipment-tab-view glass" style="flex: 1; overflow-y:auto; position:relative; display:flex; flex-direction:column; padding:15px;">
           <div class="equipment-grid">
             
             <!-- Left Grid: Equipment Slots -->
@@ -1865,7 +1865,7 @@ window.BB_CHARACTER_SHEET = (() => {
           }
 
           imbueSectionHTML += `
-            <div class="spell-attune-panel glass" style="min-height: 100%; margin-top:15px; border-color:var(--mana-blue);">
+            <div class="spell-attune-panel glass" style="margin-top:15px; border-color:var(--mana-blue);">
               <h4 style="margin-bottom: 8px; color: var(--mana-blue);">${item.name} (Item-Granted)</h4>
               <p style="font-size:0.8rem; margin-bottom:8px; color:var(--text-muted);">${item.techniqueDesc}</p>
               ${currentImbuedId ?
@@ -1889,7 +1889,7 @@ window.BB_CHARACTER_SHEET = (() => {
         <div style="display:flex; justify-content:center; flex:1; overflow:hidden;">
           <div style="flex:1; max-width:800px; display:flex; flex-direction:column;">
         <div class="spells-tab-view" style="flex:1; overflow-y:auto; padding-right:10px;">
-          <div class="spell-attune-panel glass" style="min-height: 100%; min-height: 100%;">
+          <div class="spell-attune-panel glass">
             <h4 style="margin-bottom: 12px; color: var(--amber);">Attunement Slots: ${char.attunement.used} / ${char.attunement.total}</h4>
             <label for="spell-attune-selector">Attune New Spell or Ability:</label>
             <div class="attune-controls">
@@ -2046,7 +2046,7 @@ window.BB_CHARACTER_SHEET = (() => {
       }
 
       return `
-        <div class="talents-tab-view" style="flex:1; overflow-y:auto; padding-bottom:50px; position:relative;">
+        <div class="talents-tab-view" style="flex:1; display:flex; flex-direction:column; overflow-y:auto; position:relative;">
           <button id="btn-unlock-feats" class="btn btn-secondary" style="position:absolute; top:5px; right:5px; border:1px solid var(--amber); background:rgba(0,0,0,0.8); color:var(--text-light); padding:3px 6px; border-radius:4px; cursor:pointer; font-size:0.9rem; z-index:10;" title="Edit Selections (Unlock)">
             🔓
           </button>
@@ -2069,7 +2069,7 @@ window.BB_CHARACTER_SHEET = (() => {
             ${ancestralFeatHtml || "<p style='color:#fff;'>No ancestral feat found.</p>"}
           </div>
 
-          <div class="glass" style="margin-top:20px; padding:15px; border-radius:8px; border:1px solid rgba(255,255,255,0.1);">
+          <div class="glass" style="flex:1; margin-top:20px; padding:15px; border-radius:8px; border:1px solid rgba(255,255,255,0.1);">
             <h3 style="margin-top:0; color:var(--amber); border-bottom:1px solid rgba(255,193,7,0.3); padding-bottom:5px; margin-bottom:15px;">Class Features</h3>
             ${featuresHtml}
           </div>
@@ -2186,7 +2186,7 @@ window.BB_CHARACTER_SHEET = (() => {
       return `
         <div class="notes-tab-view" style="flex:1; display:flex; flex-direction:column;">
           <h2 style="margin-top:0; color:var(--amber); border-bottom:1px solid rgba(255,193,7,0.3); padding-bottom:5px;">Character Notes</h2>
-          <textarea class="char-notes-input" style="flex:1; width:100%; min-height:100%; background:rgba(0,0,0,0.4); border:1px solid rgba(255,255,255,0.2); border-radius:4px; color:var(--text-light); padding:15px; font-family:inherit; font-size:1rem; resize:vertical;">${char.notes || ""}</textarea>
+          <textarea class="char-notes-input" style="flex:1; width:100%; background:rgba(0,0,0,0.4); border:1px solid rgba(255,255,255,0.2); border-radius:4px; color:var(--text-light); padding:15px; font-family:inherit; font-size:1rem; resize:vertical;">${char.notes || ""}</textarea>
         </div>
       `;
     }
