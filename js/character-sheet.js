@@ -481,7 +481,7 @@ window.BB_CHARACTER_SHEET = (() => {
             ${skillsColHtml}
 
             <!-- COLUMN 3: Tabs (Combat, Equipment, Traits, Background, Notes) -->
-            <div class="col-details glass" style="display: flex; flex-direction: column; height: 100%; min-height: 0;">
+            <div class="col-details glass" style="display: flex; flex-direction: column; min-height: 0; border-radius: 12px; overflow: hidden;">
               <div class="details-tab-bar" style="flex-shrink: 0; border-bottom:1px solid rgba(255,255,255,0.1);">
                 <button class="sheet-tab-btn ${activeTab === "combat" ? "active" : ""}" data-tab="combat">Combat</button>
                 <button class="sheet-tab-btn ${activeTab === "attunement" ? "active" : ""}" data-tab="attunement">Attunement</button>
