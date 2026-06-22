@@ -3859,6 +3859,28 @@ window.BB_CHARACTER_SHEET = (() => {
         char.combatState.bonusAction = false;
         char.combatState.reaction = false;
         char.combatState.movement = false;
+        
+        if (char.availableTrackers) {
+          char.trackers = char.trackers || {};
+          char.availableTrackers.forEach(t => {
+            if (t.shortRestRecover) {
+              let amount = 0;
+              if (t.shortRestRecover === "half_up") {
+                amount = Math.ceil(t.max / 2);
+              } else if (t.shortRestRecover === "half_down") {
+                amount = Math.floor(t.max / 2);
+              } else if (t.shortRestRecover === "full") {
+                amount = t.max;
+              } else {
+                amount = parseInt(t.shortRestRecover) || 0;
+              }
+              if (amount > 0) {
+                char.trackers[t.name] = Math.min(t.max, (char.trackers[t.name] || 0) + amount);
+              }
+            }
+          });
+        }
+
         window.BB_STATE.saveCharacter(char);
         if (window.BB_DICE && window.BB_DICE.showToastNotification) {
             window.BB_DICE.showToastNotification(`${char.name} took a Short Rest.`);
