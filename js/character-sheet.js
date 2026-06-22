@@ -491,7 +491,7 @@ window.BB_CHARACTER_SHEET = (() => {
                 <button class="sheet-tab-btn ${activeTab === "notes" ? "active" : ""}" data-tab="notes">Notes</button>
               </div>
 
-              <div class="tab-content-container" style="flex: 1; display: flex; flex-direction: column; padding: 15px; min-height: 0;">
+              <div class="tab-content-container" style="flex: 1; display: flex; flex-direction: column; padding: 15px; min-height: 800px;">
                 ${tabContentHtml}
               </div>
             </div>
