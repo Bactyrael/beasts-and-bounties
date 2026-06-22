@@ -1027,9 +1027,23 @@ window.BB_CHARACTER_SHEET = (() => {
       return `
         <div style="display:flex; flex-direction:column; gap:10px; height: 100%;">
             <div class="card glass" style="flex:1; display:flex; flex-direction:column; padding:15px; border-radius:8px; border:1px solid rgba(255,255,255,0.1); overflow:hidden;">
-              <h3 class="card-header-sm" style="margin-bottom:10px;">
-                Skills
-              </h3>
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                <h3 class="card-header-sm" style="margin:0;">Skills</h3>
+                <div style="display:flex; align-items:center; gap:4px; font-size:0.75rem;">
+                  <span style="color:var(--text-light);" title="Number of Inspiration Dice">Insp:</span>
+                  <input type="number" id="insp-die-count" value="${char.inspirationCount || 0}" min="0" style="width:36px; background:rgba(0,0,0,0.3); border:1px solid rgba(255,255,255,0.2); color:#fff; padding:2px; border-radius:3px; text-align:center;">
+                  <select id="char-inspiration-die" style="background:rgba(0,0,0,0.3); border:1px solid rgba(255,255,255,0.2); color:#fff; padding:2px; border-radius:3px; width:45px;">
+                    <option value="" ${!char.inspirationDie ? "selected" : ""}>-</option>
+                    <option value="d4" ${char.inspirationDie === "d4" ? "selected" : ""}>d4</option>
+                    <option value="d6" ${char.inspirationDie === "d6" ? "selected" : ""}>d6</option>
+                    <option value="d8" ${char.inspirationDie === "d8" ? "selected" : ""}>d8</option>
+                    <option value="d10" ${char.inspirationDie === "d10" ? "selected" : ""}>d10</option>
+                    <option value="d12" ${char.inspirationDie === "d12" ? "selected" : ""}>d12</option>
+                    <option value="d20" ${char.inspirationDie === "d20" ? "selected" : ""}>d20</option>
+                  </select>
+                  <button id="use-insp-btn" style="background:${char.useInspiration ? 'var(--amber)' : 'rgba(255,255,255,0.1)'}; color:${char.useInspiration ? '#000' : '#fff'}; border:none; padding:2px 6px; border-radius:3px; cursor:pointer;" title="Apply to next roll">Use</button>
+                </div>
+              </div>
               <div class="skills-list-container" style="flex:1; display:grid; grid-template-columns: 1fr; grid-auto-rows: max-content; gap:4px; overflow-y:auto; overflow-x:hidden;">
                 ${skillsHTML}
               </div>
@@ -2746,11 +2760,32 @@ window.BB_CHARACTER_SHEET = (() => {
       });
     }
 
+    const inspDieCountInput = document.getElementById("insp-die-count");
+    if (inspDieCountInput) {
+      inspDieCountInput.addEventListener("change", (e) => {
+        char.inspirationCount = parseInt(e.target.value) || 0;
+        window.BB_STATE.saveCharacter(char);
+      });
+    }
+
     const inspirationDieInput = document.getElementById("char-inspiration-die");
     if (inspirationDieInput) {
       inspirationDieInput.addEventListener("change", (e) => {
         char.inspirationDie = e.target.value;
         window.BB_STATE.saveCharacter(char);
+      });
+    }
+
+    const useInspBtn = document.getElementById("use-insp-btn");
+    if (useInspBtn) {
+      useInspBtn.addEventListener("click", () => {
+        if (!char.inspirationDie || (char.inspirationCount || 0) <= 0) {
+          window.BB_DICE.showToastNotification("You must specify a die size and have at least 1 Inspiration Die to use it.");
+          return;
+        }
+        char.useInspiration = !char.useInspiration;
+        window.BB_STATE.saveCharacter(char);
+        window.BB_APP.renderActiveTab();
       });
     }
 
