@@ -1029,20 +1029,6 @@ window.BB_CHARACTER_SHEET = (() => {
             <div class="card glass" style="flex:1; display:flex; flex-direction:column; padding:15px; border-radius:8px; border:1px solid rgba(255,255,255,0.1); overflow:hidden;">
               <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
                 <h3 class="card-header-sm" style="margin:0;">Skills</h3>
-                <div style="display:flex; align-items:center; gap:4px; font-size:0.75rem;">
-                  <span style="color:var(--text-light);" title="Number of Inspiration Dice">Insp:</span>
-                  <input type="number" id="insp-die-count" value="${char.inspirationCount || 0}" min="0" style="width:36px; background:rgba(0,0,0,0.3); border:1px solid rgba(255,255,255,0.2); color:#fff; padding:2px; border-radius:3px; text-align:center;">
-                  <select id="char-inspiration-die" style="background:rgba(0,0,0,0.3); border:1px solid rgba(255,255,255,0.2); color:#fff; padding:2px; border-radius:3px; width:45px;">
-                    <option value="" ${!char.inspirationDie ? "selected" : ""}>-</option>
-                    <option value="d4" ${char.inspirationDie === "d4" ? "selected" : ""}>d4</option>
-                    <option value="d6" ${char.inspirationDie === "d6" ? "selected" : ""}>d6</option>
-                    <option value="d8" ${char.inspirationDie === "d8" ? "selected" : ""}>d8</option>
-                    <option value="d10" ${char.inspirationDie === "d10" ? "selected" : ""}>d10</option>
-                    <option value="d12" ${char.inspirationDie === "d12" ? "selected" : ""}>d12</option>
-                    <option value="d20" ${char.inspirationDie === "d20" ? "selected" : ""}>d20</option>
-                  </select>
-                  <button id="use-insp-btn" style="background:${char.useInspiration ? 'var(--amber)' : 'rgba(255,255,255,0.1)'}; color:${char.useInspiration ? '#000' : '#fff'}; border:none; padding:2px 6px; border-radius:3px; cursor:pointer;" title="Apply to next roll">Use</button>
-                </div>
               </div>
               <div class="skills-list-container" style="flex:1; display:grid; grid-template-columns: 1fr; grid-auto-rows: max-content; gap:4px; overflow-y:auto; overflow-x:hidden;">
                 ${skillsHTML}
@@ -1691,9 +1677,23 @@ window.BB_CHARACTER_SHEET = (() => {
             <!-- Dice Roller History -->
             <div class="card col-log glass" style="flex:1; display:flex; flex-direction:row; padding:0; overflow:hidden; margin:0; margin-top:20px; max-height:400px;">
               <div style="flex:1; display:flex; flex-direction:column; padding:15px; overflow:hidden;">
-                <div class="log-header" style="margin-bottom:10px; display:flex; justify-content:space-between; align-items:center;">
+                <div class="log-header" style="margin-bottom:10px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:5px;">
                   <h3 style="margin:0;">Roll History</h3>
-                  <div style="display:flex; gap:10px;">
+                  <div style="display:flex; gap:10px; align-items:center;">
+                    <div style="display:flex; align-items:center; gap:4px; font-size:0.75rem;">
+                      <span style="color:var(--text-light);" title="Number of Inspiration Dice">Insp:</span>
+                      <input type="number" id="insp-die-count" value="${char.inspirationCount || 0}" min="0" style="width:36px; background:rgba(0,0,0,0.3); border:1px solid rgba(255,255,255,0.2); color:#fff; padding:2px; border-radius:3px; text-align:center;">
+                      <select id="char-inspiration-die" style="background:rgba(0,0,0,0.3); border:1px solid rgba(255,255,255,0.2); color:#fff; padding:2px; border-radius:3px; width:45px;">
+                        <option value="" ${!char.inspirationDie ? "selected" : ""}>-</option>
+                        <option value="d4" ${char.inspirationDie === "d4" ? "selected" : ""}>d4</option>
+                        <option value="d6" ${char.inspirationDie === "d6" ? "selected" : ""}>d6</option>
+                        <option value="d8" ${char.inspirationDie === "d8" ? "selected" : ""}>d8</option>
+                        <option value="d10" ${char.inspirationDie === "d10" ? "selected" : ""}>d10</option>
+                        <option value="d12" ${char.inspirationDie === "d12" ? "selected" : ""}>d12</option>
+                        <option value="d20" ${char.inspirationDie === "d20" ? "selected" : ""}>d20</option>
+                      </select>
+                      <button id="use-insp-btn" style="background:${char.useInspiration ? 'var(--amber)' : 'rgba(255,255,255,0.1)'}; color:${char.useInspiration ? '#000' : '#fff'}; border:none; padding:2px 6px; border-radius:3px; cursor:pointer;" title="Apply to next roll">Use</button>
+                    </div>
                     <select id="advantage-toggle" class="form-control inline-select" style="font-size:0.75rem; padding:2px 4px; height:auto; margin:0; background:rgba(0,0,0,0.8); color:var(--amber); border:1px solid rgba(255,193,7,0.5);">
                       <option value="normal">Normal Roll</option>
                       <option value="adv_dice">Advantage Dice</option>
