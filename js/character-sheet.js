@@ -2727,7 +2727,8 @@ window.BB_CHARACTER_SHEET = (() => {
         char.combatState.movement = false;
 
         // Indomitable Spirit Logic
-        const hasIndomitableSpirit = char.ancestralFeats && char.ancestralFeats.includes("Indomitable Spirit");
+        const raceData = window.BB_DATABASE.RACES.find(r => r.name === char.race);
+        const hasIndomitableSpirit = raceData && raceData.ancestralFeat && raceData.ancestralFeat.name === "Indomitable Spirit";
         if (hasIndomitableSpirit) {
           if (!char.inspirationDice) char.inspirationDice = [];
           const indomDie = char.inspirationDice.find(d => d.source === "Indomitable Spirit");
@@ -4044,7 +4045,8 @@ window.BB_CHARACTER_SHEET = (() => {
         }
 
         // Indomitable Spirit Logic
-        const hasIndomitableSpirit = char.ancestralFeats && char.ancestralFeats.includes("Indomitable Spirit");
+        const raceData = window.BB_DATABASE.RACES.find(r => r.name === char.race);
+        const hasIndomitableSpirit = raceData && raceData.ancestralFeat && raceData.ancestralFeat.name === "Indomitable Spirit";
         if (hasIndomitableSpirit) {
           if (!char.inspirationDice) char.inspirationDice = [];
           const indomDie = char.inspirationDice.find(d => d.source === "Indomitable Spirit");
