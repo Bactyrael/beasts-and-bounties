@@ -1647,10 +1647,10 @@ window.BB_CHARACTER_SHEET = (() => {
                       }
                     }
 
-                    attacksHtml += `<button class="btn btn-secondary attack-roll-btn" data-slot="unarmed" data-grip="" data-label="Damage: Unarmed Strike" data-count="1" data-type="${diceType}" data-mod="${modToUse}" data-base-crit="0" data-crit-bonus="${char.critBonus || 0}" data-max-crit="0" data-bowmens="0" data-extradice="${extraDiceConfigUnarmed || ''}" style="display:flex; justify-content:space-between; align-items:center; width:100%; padding:8px 12px; font-family:var(--font-mono); font-size:0.85rem; text-align:left; border:1px solid rgba(255,255,255,0.1); background:rgba(0,0,0,0.3); cursor:pointer;" title="Roll ${displayDmg} Bludgeoning ${modToUse >= 0 ? '+'+modToUse : modToUse} (Crit Range: 0)"><span>Unarmed Strike <span style="color:#fff; font-size:0.75rem;">(Body)</span></span><span style="color:var(--amber); display:flex; align-items:center;">${displayDmg} ${modToUse >= 0 ? '+'+modToUse : modToUse} Bludgeoning <span style="font-size:0.7rem; color:#fff; margin-left:4px;">(${statLabel})</span>${extraDmgLabelUnarmed}</span></button>`;
+                    attacksHtml += `<button class="btn btn-secondary attack-roll-btn" data-slot="unarmed" data-grip="" data-label="Damage: Unarmed Strike" data-count="1" data-type="${diceType}" data-mod="${modToUse}" data-base-crit="0" data-crit-bonus="${char.critBonus || 0}" data-max-crit="1" data-bowmens="0" data-extradice="${extraDiceConfigUnarmed || ''}" style="display:flex; justify-content:space-between; align-items:center; width:100%; padding:8px 12px; font-family:var(--font-mono); font-size:0.85rem; text-align:left; border:1px solid rgba(255,255,255,0.1); background:rgba(0,0,0,0.3); cursor:pointer;" title="Roll ${displayDmg} Bludgeoning ${modToUse >= 0 ? '+'+modToUse : modToUse} (Crit Range: 0)"><span>Unarmed Strike <span style="color:#fff; font-size:0.75rem;">(Body)</span></span><span style="color:var(--amber); display:flex; align-items:center;">${displayDmg} ${modToUse >= 0 ? '+'+modToUse : modToUse} Bludgeoning <span style="font-size:0.7rem; color:#fff; margin-left:4px;">(${statLabel})</span>${extraDmgLabelUnarmed}</span></button>`;
 
                     if (char.class === "Disciple" && char.level >= 2) {
-                      attacksHtml += `<button class="btn btn-secondary attack-roll-btn" data-slot="flowing_combo" data-grip="" data-label="Damage: Flowing Combination" data-count="1" data-type="${diceType}" data-mod="${modToUse}" data-base-crit="0" data-crit-bonus="${char.critBonus || 0}" data-max-crit="0" data-bowmens="0" style="display:flex; justify-content:space-between; align-items:center; width:100%; padding:8px 12px; font-family:var(--font-mono); font-size:0.85rem; text-align:left; border:1px solid rgba(255,255,255,0.1); background:rgba(0,0,0,0.3); cursor:pointer; margin-top:4px;" title="Roll ${displayDmg} Bludgeoning ${modToUse >= 0 ? '+'+modToUse : modToUse} (Crit Range: 0) - Costs a Bonus Action"><span>Flowing Combination <span style="color:#fff; font-size:0.75rem;">(Bonus Action)</span></span><span style="color:var(--amber); display:flex; align-items:center;">${displayDmg} ${modToUse >= 0 ? '+'+modToUse : modToUse} Bludgeoning <span style="font-size:0.7rem; color:#fff; margin-left:4px;">(${statLabel})</span></span></button>`;
+                      attacksHtml += `<button class="btn btn-secondary attack-roll-btn" data-slot="flowing_combo" data-grip="" data-label="Damage: Flowing Combination" data-count="1" data-type="${diceType}" data-mod="${modToUse}" data-base-crit="0" data-crit-bonus="${char.critBonus || 0}" data-max-crit="1" data-bowmens="0" style="display:flex; justify-content:space-between; align-items:center; width:100%; padding:8px 12px; font-family:var(--font-mono); font-size:0.85rem; text-align:left; border:1px solid rgba(255,255,255,0.1); background:rgba(0,0,0,0.3); cursor:pointer; margin-top:4px;" title="Roll ${displayDmg} Bludgeoning ${modToUse >= 0 ? '+'+modToUse : modToUse} (Crit Range: 0) - Costs a Bonus Action"><span>Flowing Combination <span style="color:#fff; font-size:0.75rem;">(Bonus Action)</span></span><span style="color:var(--amber); display:flex; align-items:center;">${displayDmg} ${modToUse >= 0 ? '+'+modToUse : modToUse} Bludgeoning <span style="font-size:0.7rem; color:#fff; margin-left:4px;">(${statLabel})</span></span></button>`;
                     }
                   }
 
@@ -3959,14 +3959,18 @@ window.BB_CHARACTER_SHEET = (() => {
         }
 
         if (isValid && diceList.length > 0) {
+          const critToggle = document.getElementById("crit-range-toggle");
+          let dropDownCrit = 0;
+          if (critToggle) dropDownCrit = parseInt(critToggle.value) || 0;
+
           if (diceList.length === 1 && diceList[0].sign === 1) {
             const first = diceList[0];
-            window.BB_DICE.roll(`Custom (${input})`, first.count, first.type, totalMod, 0, 0, false);
+            window.BB_DICE.roll(`Custom (${input})`, first.count, first.type, totalMod, 0, dropDownCrit, true);
           } else if (window.BB_DICE.rollMixed) {
             window.BB_DICE.rollMixed(`Custom (${input})`, diceList, totalMod);
           } else {
             const first = diceList[0];
-            window.BB_DICE.roll(`Custom (${input})`, first.count, first.type, totalMod, 0, 0, false);
+            window.BB_DICE.roll(`Custom (${input})`, first.count, first.type, totalMod, 0, dropDownCrit, true);
           }
           setTimeout(() => { if(typeof renderRollLog === "function") renderRollLog(); }, 100);
         } else {
