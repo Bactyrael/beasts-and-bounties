@@ -1715,6 +1715,13 @@ window.BB_CHARACTER_SHEET = (() => {
                       <option value="1">Crit: +1</option>
                       <option value="2">Crit: +2</option>
                       <option value="3">Crit: +3</option>
+                      <option value="4">Crit: +4</option>
+                      <option value="5">Crit: +5</option>
+                      <option value="6">Crit: +6</option>
+                      <option value="7">Crit: +7</option>
+                      <option value="8">Crit: +8</option>
+                      <option value="9">Crit: +9</option>
+                      <option value="10">Crit: +10</option>
                     </select>
                     <select id="advantage-toggle" class="form-control inline-select" style="font-size:0.75rem; padding:2px 4px; height:auto; margin:0; background:rgba(0,0,0,0.8); color:var(--amber); border:1px solid rgba(255,193,7,0.5);">
                       <option value="normal">Normal Roll</option>
