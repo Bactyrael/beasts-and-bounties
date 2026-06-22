@@ -3851,6 +3851,24 @@ window.BB_CHARACTER_SHEET = (() => {
       });
     }
 
+    const btnShortRest = document.getElementById("btn-short-rest");
+    if (btnShortRest) {
+      btnShortRest.addEventListener("click", () => {
+        if (!char.combatState) char.combatState = {};
+        char.combatState.action = false;
+        char.combatState.bonusAction = false;
+        char.combatState.reaction = false;
+        char.combatState.movement = false;
+        window.BB_STATE.saveCharacter(char);
+        if (window.BB_DICE && window.BB_DICE.showToastNotification) {
+            window.BB_DICE.showToastNotification(`${char.name} took a Short Rest.`);
+        }
+        const pnl = document.getElementById("short-rest-panel");
+        if (pnl) pnl.style.display = "none";
+        render();
+      });
+    }
+
     // Rest Logic
     const toggleShortRestBtn = document.getElementById("short-rest-toggle-btn");
     const shortRestPanel = document.getElementById("short-rest-panel");
