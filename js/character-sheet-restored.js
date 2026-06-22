@@ -1292,6 +1292,357 @@ window.BB_CHARACTER_SHEET = (() => {
       }
     } 
     
+        if (itemName) {
+          displayName = quantity > 1 ? `${itemName} (${quantity})` : itemName;
+          if (char.equipment && Object.values(char.equipment).includes(itemName)) {
+            displayName += " <span style='color:#aaa; font-size:0.85em; font-style:italic; font-weight:normal;'>(Equipped)</span>";
+          }
+          const dbItems = window.BB_DATABASE.ITEMS || [];
+          const miscItems = window.BB_DATABASE.MISC_ITEMS || [];
+          let itemData = dbItems.find(x => x.name === itemName);
+          if (itemData) {
+            itemData = { ...itemData, category: "item" };
+          } else {
+            itemData = miscItems.find(x => x.name === itemName);
+            if (itemData) itemData = { ...itemData, category: "misc" };
+          }
+
+          if (itemData) {
+            itemTooltip = window.BB_COMPENDIUM && window.BB_COMPENDIUM.generateDetailHTML
+              ? window.BB_COMPENDIUM.generateDetailHTML(itemData).replace(/"/g, '&quot;')
+              : `<h4>${displayName}</h4>`;
+          } else {
+            itemTooltip = `<h4>${displayName}</h4>`;
+          }
+        }
+        
+        const isOverCapacity = i >= maxSlots;
+        const overcapStyle = isOverCapacity ? "box-shadow: inset 0 0 10px rgba(255,0,0,0.5); border: 1px solid rgba(255,0,0,0.5);" : "border:1px solid rgba(255,255,255,0.2);";
+
+        return `
+          <div class="inventory-slot ${itemName ? 'info-tooltip-trigger' : ''}" data-drag-index="${i}" data-html="${itemTooltip}" style="position:relative; width:100%; min-height:40px; background:rgba(0,0,0,0.5); ${overcapStyle} border-radius:4px; display:flex; align-items:center; justify-content:flex-start; padding:0 12px; overflow:hidden; cursor:pointer;">
+            ${itemName ? `<span style="font-size:0.85rem; text-align:left; color:${isOverCapacity ? '#ff4d4d' : 'var(--amber)'}; font-weight:bold; pointer-events:none; flex-grow:1;">${displayName}${isOverCapacity ? ' <span style="font-size:0.7rem;color:#ff4d4d;">(Overcapacity)</span>' : ''}</span>` : `<span style="font-size:0.85rem; color:rgba(255,255,255,0.2); pointer-events:none; font-style:italic;">Empty Slot</span>`}
+            <div class="slot-drag-handle" draggable="true" data-index="${i}" style="position:absolute; top:0; left:0; width:100%; height:100%; z-index:10; cursor:grab;" title="${itemName ? 'Drag to move item' : ''}"></div>
+            ${itemName ? `<button class="remove-item-btn" data-index="${i}" style="position:relative; z-index:20; background:rgba(255,0,0,0.6); color:white; border:none; border-radius:50%; width:18px; height:18px; font-size:12px; cursor:pointer; display:flex; align-items:center; justify-content:center; opacity:0.7; transition:opacity 0.2s;" onmouseover="this.style.opacity=1;" onmouseout="this.style.opacity=0.7;" title="Remove Item">×</button>` : ''}
+          </div>
+        `;
+      }).join("");
+
+      const eq = char.equipment;
+      let charClass = window.BB_DATABASE.CLASSES.find(c => c.name === char.class) || {};
+      let armorTrainingSet = new Set(charClass.armorTraining || []);
+      let weaponTrainingSet = new Set(charClass.weaponTraining || []);
+
+      if (char.talents.includes("Veiled")) armorTrainingSet.add("Ethereal Armor");
+      if (char.talents.includes("Mercurial")) armorTrainingSet.add("Light Armor");
+      if (char.talents.includes("Bulwark")) armorTrainingSet.add("Medium Armor");
+      if (char.talents.includes("Juggernaut")) armorTrainingSet.add("Heavy Armor");
+      if (char.talents.includes("Aegis")) armorTrainingSet.add("Shields");
+
+      if (char.talents.includes("Martialist")) weaponTrainingSet.add("Martial Weapons");
+      if (char.talents.includes("Colossus")) weaponTrainingSet.add("Great Weapons");
+      if (char.talents.includes("Thaumic")) weaponTrainingSet.add("Focus Weapons");
+
+      let armorTrainingList = Array.from(armorTrainingSet).join(", ") || "None";
+      let weaponTrainingList = Array.from(weaponTrainingSet).join(", ") || "None";
+      return `
+        <div class="equipment-tab-view glass" style="flex: 1; overflow-y:auto; position:relative; display:flex; flex-direction:column; padding:15px;">
+          <div class="equipment-grid">
+            
+            <!-- Left Grid: Equipment Slots -->
+            <div class="paper-doll-grid">
+              ${renderEquipSlot("Head", eq.head, "head", char, "pd-head")}
+              ${renderEquipSlot("Armor", eq.armor, "armor", char, "pd-armor")}
+              ${renderEquipSlot("Hands", eq.hands, "hands", char, "pd-hands")}
+              ${renderEquipSlot("Feet", eq.feet, "feet", char, "pd-feet")}
+              ${renderEquipSlot("Main Hand", eq.mainHand, "mainHand", char, "pd-mainHand")}
+              ${renderEquipSlot("Off Hand", eq.offHand, "offHand", char, "pd-offHand")}
+              ${renderEquipSlot("Waist", eq.waist, "waist", char, "pd-waist")}
+              ${renderEquipSlot("Neck", eq.neck, "neck", char, "pd-neck")}
+              ${renderEquipSlot("Finger", eq.finger1, "finger1", char, "pd-finger1")}
+              ${renderEquipSlot("Finger", eq.finger2, "finger2", char, "pd-finger2")}
+            </div>
+
+            <!-- Right Grid: Training & Wealth -->
+            <div class="wealth-column" style="display:flex; flex-direction:column; gap:15px; background:transparent; border:none; box-shadow:none;">
+              
+
+
+              <!-- Training Section -->
+              <div class="training-card glass" style="padding:15px; border-radius:8px;">
+                <h4 style="margin-top:0; margin-bottom:10px; color:var(--amber); border-bottom:1px solid rgba(255,193,7,0.3); padding-bottom:5px;">Training</h4>
+                <div style="margin-bottom:8px;">
+                  <strong style="color:var(--text-light); font-size:0.85rem;">Armor:</strong>
+                  <div style="font-size:0.85rem; color:#fff; margin-top:2px;">${armorTrainingList}</div>
+                </div>
+                <div>
+                  <strong style="color:var(--text-light); font-size:0.85rem;">Weapons:</strong>
+                  <div style="font-size:0.85rem; color:#fff; margin-top:2px;">${weaponTrainingList}</div>
+                </div>
+              </div>
+
+              <!-- Wallet -->
+              <div class="wallet-card glass" style="padding:15px; border-radius:8px;">
+                <h4 style="margin-top:0; margin-bottom:10px; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:5px;">Wallet</h4>
+              <div class="coin-row bronze">
+                <span class="coin-icon">⚫</span>
+                <span class="coin-name">Bronze:</span>
+                <input type="number" class="coin-val-input" data-coin="bronze" value="${eq.coins.bronze}">
+              </div>
+              <div class="coin-row silver">
+                <span class="coin-icon">⚪</span>
+                <span class="coin-name">Silver:</span>
+                <input type="number" class="coin-val-input" data-coin="silver" value="${eq.coins.silver}">
+              </div>
+              <div class="coin-row gold">
+                <span class="coin-icon">🟡</span>
+                <span class="coin-name">Gold:</span>
+                <input type="number" class="coin-val-input" data-coin="gold" value="${eq.coins.gold}">
+              </div>
+              <div class="coin-row platinum">
+                <span class="coin-icon">🪙</span>
+                <span class="coin-name">Platinum:</span>
+                <input type="number" class="coin-val-input" data-coin="platinum" value="${eq.coins.platinum}">
+              </div>
+              <div class="coin-row crystal">
+                <span class="coin-icon">💎</span>
+                <span class="coin-name">Crystal:</span>
+                <input type="number" class="coin-val-input" data-coin="crystal" value="${eq.coins.crystal}">
+              </div>
+              </div>
+              <!-- Burden -->
+              <div class="card burden-card glass" style="padding:10px 15px; border-radius:8px; margin-top:20px;">
+                <h4 style="margin-top:0; margin-bottom:10px; color:var(--amber); border-bottom:1px solid rgba(255,193,7,0.3); padding-bottom:5px;">Burden</h4>
+                <div style="display:flex; flex-direction:column; gap:8px;">
+                  <div class="mini-stat" style="display:flex; justify-content:space-between; align-items:center; font-size:0.75rem;">
+                    <strong>Encumbrance:</strong>
+                    <span><input type="number" class="inline-hp-input" style="width:40px; margin-right:4px; text-align:right; font-size:0.75rem;" id="encumb-val" value="${char.encumbrance}" readonly> / ${(char.equipment && char.equipment.armor === 'Heartcord' && (char._effectiveCon || char.stats.Con) < 18 ? 18 : (char._effectiveCon || char.stats.Con)) * 10} lbs</span>
+                  </div>
+                  <div class="mini-stat" style="display:flex; justify-content:space-between; align-items:center; font-size:0.75rem;">
+                    <strong>Carry Capacity:</strong>
+                    <span>${(char._effectiveStr || char.stats.Str) * 10} lbs</span>
+                  </div>
+                  <div class="mini-stat" style="display:flex; justify-content:space-between; align-items:center; font-size:0.75rem;">
+                    <strong>Push/Drag/Lift:</strong>
+                    <span>${(char._effectiveStr || char.stats.Str) * (char.equipment && char.equipment.hands === 'Goliath Grippers' ? 40 : 20)} lbs</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Inventory Section -->
+          <div class="inventory-section glass" style="margin-top:20px; padding:15px; border-radius:8px; border:1px solid rgba(255,255,255,0.1);">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:15px;">
+              <div style="flex:1;">
+                <h2 style="margin-top:0; color:var(--amber); border-bottom:1px solid rgba(255,193,7,0.3); padding-bottom:5px;">Inventory (${maxSlots})</h2>
+                <div style="position:relative; margin-top:10px;">
+                  <input type="text" id="inventory-search" placeholder="Search the compendium to add an item..." style="width:100%; padding:8px; background:rgba(0,0,0,0.5); border:1px solid rgba(255,255,255,0.2); border-radius:4px; color:var(--text-light);">
+                  <div id="inventory-search-results" style="position:absolute; top:100%; left:0; width:100%; max-height:200px; overflow-y:auto; background:#1a1a1a; border:1px solid rgba(255,255,255,0.2); border-radius:4px; z-index:100; display:none; flex-direction:column; box-shadow:0 4px 8px rgba(0,0,0,0.5);"></div>
+                </div>
+                <div style="display:flex; gap:10px; margin-top:10px; align-items: stretch; width: 100%;">
+                  <!-- Containers -->
+                  <div style="display:flex; flex-direction:column; gap:4px; flex: 2; justify-content:center;">
+                    ${renderEquipSlot("Container", eq.container1, "container1", char, "pd-container1")}
+                  </div>
+                  <!-- Discard Dropzone -->
+                  <div id="inventory-trash-zone" style="flex: 1; min-height:50px; background:rgba(255,0,0,0.1); border:1px dashed rgba(255,0,0,0.4); border-radius:4px; display:flex; align-items:center; justify-content:center; color:rgba(255,0,0,0.7); font-size:0.9rem; transition:background 0.2s; text-align: center;">
+                    Discard
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="inventory-grid" style="display:flex; flex-direction:column; gap:4px; margin-top:10px; padding-bottom:20px; padding-right: 8px;">
+              ${gridHtml}
+            </div>
+          </div>
+        </div>
+      `;
+      } catch (err) {
+        return `<div style="padding:20px; color:red; background:rgba(255,0,0,0.1); border:1px solid red; border-radius:8px;">
+          <h3>Equipment Render Error</h3>
+          <p>${err.message}</p>
+          <pre style="font-size:0.7rem; overflow-x:auto;">${err.stack}</pre>
+        </div>`;
+      }
+    } 
+    
+          displayName = quantity > 1 ? `${itemName} (${quantity})` : itemName;
+          if (char.equipment && Object.values(char.equipment).includes(itemName)) {
+            displayName += " <span style='color:#aaa; font-size:0.85em; font-style:italic; font-weight:normal;'>(Equipped)</span>";
+          }
+          const dbItems = window.BB_DATABASE.ITEMS || [];
+          const miscItems = window.BB_DATABASE.MISC_ITEMS || [];
+          let itemData = dbItems.find(x => x.name === itemName);
+          if (itemData) {
+            itemData = { ...itemData, category: "item" };
+          } else {
+            itemData = miscItems.find(x => x.name === itemName);
+            if (itemData) itemData = { ...itemData, category: "misc" };
+          }
+
+          if (itemData) {
+            itemTooltip = window.BB_COMPENDIUM && window.BB_COMPENDIUM.generateDetailHTML
+              ? window.BB_COMPENDIUM.generateDetailHTML(itemData).replace(/"/g, '&quot;')
+              : `<h4>${displayName}</h4>`;
+          } else {
+            itemTooltip = `<h4>${displayName}</h4>`;
+          }
+        }
+
+        const isOverCapacity = i >= maxSlots;
+        const overcapStyle = isOverCapacity ? "box-shadow: inset 0 0 10px rgba(255,0,0,0.5); border: 1px solid rgba(255,0,0,0.5);" : "border:1px solid rgba(255,255,255,0.2);";
+
+        return `
+          <div class="inventory-slot ${itemName ? 'info-tooltip-trigger' : ''}" data-drag-index="${i}" data-html="${itemTooltip}" style="position:relative; width:100%; min-height:40px; background:rgba(0,0,0,0.5); ${overcapStyle} border-radius:4px; display:flex; align-items:center; justify-content:flex-start; padding:0 12px; overflow:hidden; cursor:pointer;">
+            ${itemName ? `<span style="font-size:0.85rem; text-align:left; color:${isOverCapacity ? '#ff4d4d' : 'var(--amber)'}; font-weight:bold; pointer-events:none; flex-grow:1;">${displayName}${isOverCapacity ? ' <span style="font-size:0.7rem;color:#ff4d4d;">(Overcapacity)</span>' : ''}</span>` : `<span style="font-size:0.85rem; color:rgba(255,255,255,0.2); pointer-events:none; font-style:italic;">Empty Slot</span>`}
+            <div class="slot-drag-handle" draggable="true" data-index="${i}" style="position:absolute; top:0; left:0; width:100%; height:100%; z-index:10; cursor:grab;" title="${itemName ? 'Drag to move item' : ''}"></div>
+            ${itemName ? `<button class="remove-item-btn" data-index="${i}" style="position:relative; z-index:20; background:rgba(255,0,0,0.6); color:white; border:none; border-radius:50%; width:18px; height:18px; font-size:12px; cursor:pointer; display:flex; align-items:center; justify-content:center; opacity:0.7; transition:opacity 0.2s;" onmouseover="this.style.opacity=1;" onmouseout="this.style.opacity=0.7;" title="Remove Item">├ù</button>` : ''}
+          </div>
+        `;
+      }).join("");
+
+      const eq = char.equipment;
+      let charClass = window.BB_DATABASE.CLASSES.find(c => c.name === char.class) || {};
+      let armorTrainingSet = new Set(charClass.armorTraining || []);
+      let weaponTrainingSet = new Set(charClass.weaponTraining || []);
+
+      if (char.talents.includes("Veiled")) armorTrainingSet.add("Ethereal Armor");
+      if (char.talents.includes("Mercurial")) armorTrainingSet.add("Light Armor");
+      if (char.talents.includes("Bulwark")) armorTrainingSet.add("Medium Armor");
+      if (char.talents.includes("Juggernaut")) armorTrainingSet.add("Heavy Armor");
+      if (char.talents.includes("Aegis")) armorTrainingSet.add("Shields");
+
+      if (char.talents.includes("Martialist")) weaponTrainingSet.add("Martial Weapons");
+      if (char.talents.includes("Colossus")) weaponTrainingSet.add("Great Weapons");
+      if (char.talents.includes("Thaumic")) weaponTrainingSet.add("Focus Weapons");
+
+      let armorTrainingList = Array.from(armorTrainingSet).join(", ") || "None";
+      let weaponTrainingList = Array.from(weaponTrainingSet).join(", ") || "None";
+      return `
+        <div class="equipment-tab-view glass" style="flex: 1; overflow-y:auto; position:relative; display:flex; flex-direction:column; padding:15px;">
+          <div class="equipment-grid">
+
+            <!-- Left Grid: Equipment Slots -->
+            <div class="paper-doll-grid">
+              ${renderEquipSlot("Head", eq.head, "head", char, "pd-head")}
+              ${renderEquipSlot("Armor", eq.armor, "armor", char, "pd-armor")}
+              ${renderEquipSlot("Hands", eq.hands, "hands", char, "pd-hands")}
+              ${renderEquipSlot("Feet", eq.feet, "feet", char, "pd-feet")}
+              ${renderEquipSlot("Main Hand", eq.mainHand, "mainHand", char, "pd-mainHand")}
+              ${renderEquipSlot("Off Hand", eq.offHand, "offHand", char, "pd-offHand")}
+              ${renderEquipSlot("Waist", eq.waist, "waist", char, "pd-waist")}
+              ${renderEquipSlot("Neck", eq.neck, "neck", char, "pd-neck")}
+              ${renderEquipSlot("Finger", eq.finger1, "finger1", char, "pd-finger1")}
+              ${renderEquipSlot("Finger", eq.finger2, "finger2", char, "pd-finger2")}
+            </div>
+
+            <!-- Right Grid: Training & Wealth -->
+            <div class="wealth-column" style="display:flex; flex-direction:column; gap:15px; background:transparent; border:none; box-shadow:none;">
+
+
+
+              <!-- Training Section -->
+              <div class="training-card glass" style="padding:15px; border-radius:8px;">
+                <h4 style="margin-top:0; margin-bottom:10px; color:var(--amber); border-bottom:1px solid rgba(255,193,7,0.3); padding-bottom:5px;">Training</h4>
+                <div style="margin-bottom:8px;">
+                  <strong style="color:var(--text-light); font-size:0.85rem;">Armor:</strong>
+                  <div style="font-size:0.85rem; color:#fff; margin-top:2px;">${armorTrainingList}</div>
+                </div>
+                <div>
+                  <strong style="color:var(--text-light); font-size:0.85rem;">Weapons:</strong>
+                  <div style="font-size:0.85rem; color:#fff; margin-top:2px;">${weaponTrainingList}</div>
+                </div>
+              </div>
+
+              <!-- Wallet -->
+              <div class="wallet-card glass" style="padding:15px; border-radius:8px;">
+                <h4 style="margin-top:0; margin-bottom:10px; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:5px;">Wallet</h4>
+              <div class="coin-row bronze">
+                <span class="coin-icon">ΓÜ½</span>
+                <span class="coin-name">Bronze:</span>
+                <input type="number" class="coin-val-input" data-coin="bronze" value="${eq.coins.bronze}">
+              </div>
+              <div class="coin-row silver">
+                <span class="coin-icon">ΓÜ¬</span>
+                <span class="coin-name">Silver:</span>
+                <input type="number" class="coin-val-input" data-coin="silver" value="${eq.coins.silver}">
+              </div>
+              <div class="coin-row gold">
+                <span class="coin-icon">≡ƒƒí</span>
+                <span class="coin-name">Gold:</span>
+                <input type="number" class="coin-val-input" data-coin="gold" value="${eq.coins.gold}">
+              </div>
+              <div class="coin-row platinum">
+                <span class="coin-icon">≡ƒ¬Ö</span>
+                <span class="coin-name">Platinum:</span>
+                <input type="number" class="coin-val-input" data-coin="platinum" value="${eq.coins.platinum}">
+              </div>
+              <div class="coin-row crystal">
+                <span class="coin-icon">≡ƒÆÄ</span>
+                <span class="coin-name">Crystal:</span>
+                <input type="number" class="coin-val-input" data-coin="crystal" value="${eq.coins.crystal}">
+              </div>
+              </div>
+              <!-- Burden -->
+              <div class="card burden-card glass" style="padding:10px 15px; border-radius:8px; margin-top:20px;">
+                <h4 style="margin-top:0; margin-bottom:10px; color:var(--amber); border-bottom:1px solid rgba(255,193,7,0.3); padding-bottom:5px;">Burden</h4>
+                <div style="display:flex; flex-direction:column; gap:8px;">
+                  <div class="mini-stat" style="display:flex; justify-content:space-between; align-items:center; font-size:0.75rem;">
+                    <strong>Encumbrance:</strong>
+                    <span><input type="number" class="inline-hp-input" style="width:40px; margin-right:4px; text-align:right; font-size:0.75rem;" id="encumb-val" value="${char.encumbrance}" readonly> / ${(char.equipment && char.equipment.armor === 'Heartcord' && (char._effectiveCon || char.stats.Con) < 18 ? 18 : (char._effectiveCon || char.stats.Con)) * 10} lbs</span>
+                  </div>
+                  <div class="mini-stat" style="display:flex; justify-content:space-between; align-items:center; font-size:0.75rem;">
+                    <strong>Carry Capacity:</strong>
+                    <span>${(char._effectiveStr || char.stats.Str) * 10} lbs</span>
+                  </div>
+                  <div class="mini-stat" style="display:flex; justify-content:space-between; align-items:center; font-size:0.75rem;">
+                    <strong>Push/Drag/Lift:</strong>
+                    <span>${(char._effectiveStr || char.stats.Str) * (char.equipment && char.equipment.hands === 'Goliath Grippers' ? 40 : 20)} lbs</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Inventory Section -->
+          <div class="inventory-section glass" style="margin-top:20px; padding:15px; border-radius:8px; border:1px solid rgba(255,255,255,0.1);">
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:15px;">
+              <div style="flex:1;">
+                <h2 style="margin-top:0; color:var(--amber); border-bottom:1px solid rgba(255,193,7,0.3); padding-bottom:5px;">Inventory (${maxSlots})</h2>
+                <div style="position:relative; margin-top:10px;">
+                  <input type="text" id="inventory-search" placeholder="Search the compendium to add an item..." style="width:100%; padding:8px; background:rgba(0,0,0,0.5); border:1px solid rgba(255,255,255,0.2); border-radius:4px; color:var(--text-light);">
+                  <div id="inventory-search-results" style="position:absolute; top:100%; left:0; width:100%; max-height:200px; overflow-y:auto; background:#1a1a1a; border:1px solid rgba(255,255,255,0.2); border-radius:4px; z-index:100; display:none; flex-direction:column; box-shadow:0 4px 8px rgba(0,0,0,0.5);"></div>
+                </div>
+                <div style="display:flex; gap:10px; margin-top:10px; align-items: stretch; width: 100%;">
+                  <!-- Containers -->
+                  <div style="display:flex; flex-direction:column; gap:4px; flex: 2; justify-content:center;">
+                    ${renderEquipSlot("Container", eq.container1, "container1", char, "pd-container1")}
+                  </div>
+                  <!-- Discard Dropzone -->
+                  <div id="inventory-trash-zone" style="flex: 1; min-height:50px; background:rgba(255,0,0,0.1); border:1px dashed rgba(255,0,0,0.4); border-radius:4px; display:flex; align-items:center; justify-content:center; color:rgba(255,0,0,0.7); font-size:0.9rem; transition:background 0.2s; text-align: center;">
+                    Discard
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="inventory-grid" style="display:flex; flex-direction:column; gap:4px; margin-top:10px; padding-bottom:20px; padding-right: 8px;">
+              ${gridHtml}
+            </div>
+          </div>
+        </div>
+      `;
+      } catch (err) {
+        return `<div style="padding:20px; color:red; background:rgba(255,0,0,0.1); border:1px solid red; border-radius:8px;">
+          <h3>Equipment Render Error</h3>
+          <p>${err.message}</p>
+          <pre style="font-size:0.7rem; overflow-x:auto;">${err.stack}</pre>
+        </div>`;
+      }
+    }
+
     else if (activeTab === "combat") {
       let attacksHtml = ""; // Pre-declare if needed inside, but it's an IIFE right now
       return `
@@ -1317,6 +1668,17 @@ window.BB_CHARACTER_SHEET = (() => {
                     headerExtras = `<button class="btn btn-xs btn-primary btn-retrograde" style="padding:2px 8px; font-size:0.75rem; display:flex; align-items:center; gap:5px; ${retroStyle}" title="Recover Covenant uses equal to half your Justicar level (rounded up) - Once per Long Rest" ${retroDisabled}><i class="fas fa-undo"></i> In Retrograde</button>`;
                 } else if (char.class === "Mage") {
                     headerExtras = `<div style="display:flex; gap:5px;">`;
+                    if (char.level >= 1) {
+                      let codexStudy = char.trackers && char.trackers["codexStudy"];
+                      if (codexStudy) {
+                        headerExtras += `<div style="display:flex; align-items:center; gap:5px; font-size:0.75rem; background:rgba(0,0,0,0.3); padding:2px 8px; border-radius:3px; border:1px solid rgba(255,193,7,0.3);">
+                          <i class="fas fa-book-open" style="color:var(--amber);"></i> Studying ${codexStudy.spellName} (${codexStudy.completed}/${codexStudy.required})
+                          <button class="btn btn-xs btn-danger btn-cancel-codex" style="padding:0px 4px; margin-left:5px;" title="Cancel Study">X</button>
+                        </div>`;
+                      } else {
+                        headerExtras += `<button class="btn btn-xs btn-secondary btn-codex-study" style="padding:2px 8px; font-size:0.75rem; display:flex; align-items:center; gap:5px;" title="Attune a spell from any class over multiple long rests."><i class="fas fa-book-open"></i> Codex Study</button>`;
+                      }
+                    }
                     if (char.level >= 4) {
                       let medDisabled = (char.trackers && char.trackers["studiousMeditationUsed"]) ? "disabled" : "";
                       let medStyle = medDisabled ? "opacity:0.5; cursor:not-allowed;" : "";
@@ -2579,16 +2941,62 @@ window.BB_CHARACTER_SHEET = (() => {
     });
 
 
-      // Long Rest fully heals HP, MP, SP and resets saves/temp HP
-      const btnLongRest = document.getElementById("btn-long-rest");
-      if (btnLongRest) {
-        btnLongRest.addEventListener("click", () => {
-          char.hp.current = char.hp.total;
-          char.hp.temp = 0;
-          char.mp.current = char.mp.total;
-          if (!char.mp.temp) char.mp.temp = 0;
-          char.mp.temp = 0;
-          char.sp.current = char.sp.total;
+    document.querySelectorAll(".btn-codex-study").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const modal = document.getElementById("codex-modal");
+        if (modal) modal.showModal();
+      });
+    });
+
+    const btnCodexClose = document.getElementById("btn-codex-close");
+    if (btnCodexClose) {
+      btnCodexClose.addEventListener("click", () => {
+        const modal = document.getElementById("codex-modal");
+        if (modal) modal.close();
+      });
+    }
+
+    const btnCodexStart = document.getElementById("btn-codex-start");
+    if (btnCodexStart) {
+      btnCodexStart.addEventListener("click", () => {
+        const select = document.getElementById("codex-spell-select");
+        const spellId = select ? select.value : "";
+        if (!spellId) {
+          window.BB_DICE.showToastNotification("Please select a spell first.");
+          return;
+        }
+
+        const spellData = window.BB_DATABASE.SPELLS.find(s => s.id === spellId);
+        if (!spellData) return;
+
+        char.trackers = char.trackers || {};
+        char.trackers["codexStudy"] = {
+          spellId: spellId,
+          spellName: spellData.name,
+          required: Math.max(1, spellData.cost || 0),
+          completed: 0
+        };
+
+        window.BB_STATE.saveCharacter(char);
+        const modal = document.getElementById("codex-modal");
+        if (modal) modal.close();
+        window.BB_DICE.showToastNotification(`Started studying ${spellData.name}!`);
+        render();
+      });
+    }
+
+    document.querySelectorAll(".btn-cancel-codex").forEach(btn => {
+      btn.addEventListener("click", () => {
+        if (confirm("Are you sure you want to abandon your current spell study? All progress will be lost.")) {
+          if (char.trackers && char.trackers["codexStudy"]) {
+            delete char.trackers["codexStudy"];
+            window.BB_STATE.saveCharacter(char);
+            render();
+          }
+        }
+      });
+    });
+
         if (!char.sp.temp) char.sp.temp = 0;
         char.sp.temp = 0;
         char.deathSaves.successes = 0;
@@ -2987,9 +3395,9 @@ window.BB_CHARACTER_SHEET = (() => {
 
     // Initiative roll hook
     const doInitiativeRoll = (useBattleMeditation) => {
-      let effectiveLck = (char.stats && char.stats.Lck !== undefined) ? char.stats.Lck : 10;
+      let effectiveLck = char.stats.Lck;
       if (char.equipment && char.equipment.hands === "Caspian Clutches" && effectiveLck < 18) effectiveLck = 18;
-      let luckMod = window.BB_STATE.getModifier(effectiveLck) || 0;
+      let luckMod = window.BB_STATE.getModifier(effectiveLck);
 
       let extraModifier = 0;
       let extraBreakdown = "";
@@ -3000,7 +3408,7 @@ window.BB_CHARACTER_SHEET = (() => {
       }
 
       // Alacrity Talent Bonus (1d4)
-      if (char.talents && Array.isArray(char.talents) && char.talents.includes("Alacrity")) {
+      if (char.talents && char.talents.includes("Alacrity")) {
         const d4Roll = Math.floor(Math.random() * 4) + 1;
         extraModifier += d4Roll;
         extraBreakdown += `+${d4Roll} (Alacrity) `;
@@ -3019,30 +3427,6 @@ window.BB_CHARACTER_SHEET = (() => {
             if (window.BB_APP && window.BB_APP.renderActiveTab) window.BB_APP.renderActiveTab();
             window.BB_DICE.showToastNotification("Combat Instinct: Regained 1 Berserk Charge!");
           }
-        }
-        
-        let wantsToBerserk = window.confirm("Combat Instinct: Would you like to enter a Berserk state for free?");
-        if (wantsToBerserk) {
-          let toastMsg = "Entered Berserk Trance (Combat Instinct)!";
-          let dexMod = window.BB_STATE.getModifier(window.BB_STATE.getComputedStat(char, "Dex")) || 0;
-          let spRecover = char.level + dexMod;
-          char.sp = char.sp || { current: 0, total: 0, temp: 0 };
-
-          if (char.sp.current < char.sp.total) {
-            let missing = char.sp.total - char.sp.current;
-            if (spRecover <= missing) {
-              char.sp.current += spRecover;
-            } else {
-              char.sp.current = char.sp.total;
-              char.sp.temp = Math.max(char.sp.temp || 0, spRecover - missing);
-            }
-          } else {
-            char.sp.temp = Math.max(char.sp.temp || 0, spRecover);
-          }
-          toastMsg += `<br>Resurgent Fury: Regained ${spRecover} Stamina!`;
-          window.BB_DICE.showToastNotification(toastMsg);
-          window.BB_STATE.saveCharacter(char);
-          if (window.BB_APP && window.BB_APP.renderActiveTab) window.BB_APP.renderActiveTab();
         }
       }
 
@@ -3089,19 +3473,11 @@ window.BB_CHARACTER_SHEET = (() => {
 
     const btnInit = document.getElementById("btn-roll-initiative");
     if (btnInit) {
-      btnInit.addEventListener("click", (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        doInitiativeRoll(false);
-      });
+      btnInit.addEventListener("click", () => doInitiativeRoll(false));
     }
     const btnBattleMed = document.getElementById("btn-battle-meditation");
     if (btnBattleMed) {
-      btnBattleMed.addEventListener("click", (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        doInitiativeRoll(true);
-      });
+      btnBattleMed.addEventListener("click", () => doInitiativeRoll(true));
     }
 
     // Tab buttons
@@ -3137,28 +3513,17 @@ window.BB_CHARACTER_SHEET = (() => {
           
           if (pool) {
             const poolName = pool === "mp" ? "Mana" : "Stamina";
-            let temp = char[pool].temp || 0;
-            
-            if (char[pool].current + temp < totalCost) {
+            if (char[pool].current < totalCost) {
               if (window.BB_DICE && window.BB_DICE.showToastNotification) {
                 window.BB_DICE.showToastNotification(`Out of ${poolName}!`);
               }
               return;
             }
-            
-            if (temp >= totalCost) {
-              char[pool].temp -= totalCost;
-            } else {
-              let remainingCost = totalCost - temp;
-              char[pool].temp = 0;
-              char[pool].current = Math.max(0, char[pool].current - remainingCost);
-            }
-            
+            char[pool].current = Math.max(0, char[pool].current - totalCost);
             window.BB_STATE.saveCharacter(char);
             if (window.BB_DICE && window.BB_DICE.showToastNotification) {
               window.BB_DICE.showToastNotification(`Cast ${spell.name}${castType === 'overcharge' ? ' (Overcharged)' : ''}! Used ${totalCost} ${poolName}.`);
             }
-            render();
           }
         }
       });

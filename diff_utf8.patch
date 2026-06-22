@@ -1,0 +1,2352 @@
+﻿diff --git a/js/character-sheet.js b/js/character-sheet.js
+index cd49aeb..10c0f23 100644
+--- a/js/character-sheet.js
++++ b/js/character-sheet.js
+@@ -1,7 +1,9 @@
+ // B&B Interactive Character Sheet Viewer
+ window.BB_CHARACTER_SHEET = (() => {
+-  let activeTab = localStorage.getItem("bb_sheet_tab") || "spells";
++  let activeTab = localStorage.getItem("bb_sheet_tab") || "combat";
++  if (activeTab === "spells") activeTab = "combat";
+   let isEditingBackground = false;
++  let isConditionsFlyoutOpen = false;
+ 
+   function init() {
+     render();
+@@ -63,6 +65,9 @@ window.BB_CHARACTER_SHEET = (() => {
+     if (char.equipment && Object.values(char.equipment).includes("Elephant's Amulet")) {
+       totalAttunementSlots += 1;
+     }
++    if (char.class === "Mage" && char.level >= 9) {
++      totalAttunementSlots += 2;
++    }
+     let usedAttunement = 0;
+     if (char.spells && window.BB_DATABASE && window.BB_DATABASE.SPELLS) {
+       char.spells.forEach(spellId => {
+@@ -74,6 +79,53 @@ window.BB_CHARACTER_SHEET = (() => {
+     }
+     char.attunement = { used: usedAttunement, total: totalAttunementSlots };
+ 
++    // Compute Class-Granted Abilities & Trackers
++    char.grantedAbilities = [];
++    char.availableTrackers = [];
++    char.trackers = char.trackers || {};
++    
++    if (window.BB_DATABASE && window.BB_DATABASE.CLASSES) {
++      const classData = window.BB_DATABASE.CLASSES.find(c => c.name.toLowerCase() === (char.class || "").toLowerCase());
++      if (classData && classData.features) {
++        classData.features.forEach(feature => {
++          if (feature.level <= char.level) {
++            if (feature.grantedAbilities) {
++              char.grantedAbilities.push(...feature.grantedAbilities);
++            }
++            const trackersToProcess = [];
++            if (feature.tracker) trackersToProcess.push(feature.tracker);
++            if (feature.trackers) trackersToProcess.push(...feature.trackers);
++            
++            trackersToProcess.forEach(t => {
++              let maxVal = 0;
++              try {
++                const expression = t.maxCalc.replace(/level/g, char.level);
++                maxVal = eval(expression);
++              } catch(e) {
++                console.error("Failed to parse tracker maxCalc", e);
++              }
++              let srr = t.shortRestRecover;
++              if (srr && srr.includes && srr.includes("char.level")) {
++                try {
++                  srr = eval(srr);
++                } catch(e) {}
++              }
++              
++              char.availableTrackers.push({
++                name: t.name,
++                type: t.type,
++                max: maxVal,
++                shortRestRecover: srr
++              });
++              if (char.trackers[t.name] === undefined) {
++                char.trackers[t.name] = t.type === "number" ? (t.defaultZero ? 0 : maxVal) : 0;
++              }
++            });
++          }
++        });
++      }
++    }
++    
+     // Helper for equip bonuses
+     const getEquipStatBonus = (charObj, statKey) => {
+       if (!charObj.equipment || !window.BB_DATABASE || !window.BB_DATABASE.ITEMS) return 0;
+@@ -98,20 +150,16 @@ window.BB_CHARACTER_SHEET = (() => {
+     };
+ 
+     // Dynamic HP, MP, SP, and Encumbrance Max Calculations
+-    let effectiveCon = char.stats.Con + getEquipStatBonus(char, "Con");
+-    if (char.equipment && char.equipment.armor === "Heartcord" && effectiveCon < 18) effectiveCon = 18;
++    let effectiveCon = window.BB_STATE.getComputedStat(char, "Con");
+     const conMod = window.BB_STATE.getModifier(effectiveCon);
+     
+-    let effectiveInt = char.stats.Int + getEquipStatBonus(char, "Int");
+-    if (char.equipment && char.equipment.head === "Starveil" && effectiveInt < 18) effectiveInt = 18;
++    let effectiveInt = window.BB_STATE.getComputedStat(char, "Int");
+     const intMod = window.BB_STATE.getModifier(effectiveInt);
+     
+-    let effectiveDex = char.stats.Dex + getEquipStatBonus(char, "Dex");
+-    if (char.equipment && char.equipment.feet === "Dragon Riders" && effectiveDex < 18) effectiveDex = 18;
++    let effectiveDex = window.BB_STATE.getComputedStat(char, "Dex");
+     const dexMod = window.BB_STATE.getModifier(effectiveDex);
+     
+-    let effectiveStr = char.stats.Str + getEquipStatBonus(char, "Str");
+-    if (char.equipment && char.equipment.waist === "String of Ears" && effectiveStr < 18) effectiveStr = 18;
++    let effectiveStr = window.BB_STATE.getComputedStat(char, "Str");
+     
+     char._effectiveStr = effectiveStr;
+     char._effectiveCon = effectiveCon;
+@@ -270,11 +318,11 @@ window.BB_CHARACTER_SHEET = (() => {
+     
+     char.hasUntrainedArmor = hasUntrainedArmor;
+ 
+-    const finalDefStatBonus = baseDefStat ? window.BB_STATE.getModifier(char.stats[baseDefStat]) : 0;
++    const finalDefStatBonus = baseDefStat ? Math.max(0, window.BB_STATE.getModifier(window.BB_STATE.getComputedStat(char, baseDefStat))) : 0;
+     if (baseDefStat) defBreakdown.push(`${finalDefStatBonus >= 0 ? '+' : ''}${finalDefStatBonus} (${baseDefStat} Modifier)`);
+     char.defBreakdownStr = defBreakdown.join("&#10;");
+ 
+-    const finalResStatBonus = baseResStat ? window.BB_STATE.getModifier(char.stats[baseResStat]) : 0;
++    const finalResStatBonus = baseResStat ? Math.max(0, window.BB_STATE.getModifier(window.BB_STATE.getComputedStat(char, baseResStat))) : 0;
+     if (baseResStat) resBreakdown.push(`${finalResStatBonus >= 0 ? '+' : ''}${finalResStatBonus} (${baseResStat} Modifier)`);
+     char.resBreakdownStr = resBreakdown.join("&#10;");
+ 
+@@ -315,6 +363,13 @@ window.BB_CHARACTER_SHEET = (() => {
+         }
+       });
+     }
++
++    // Berserker Level 5: Monomania
++    if (char.class === "Berserker" && char.level >= 5) {
++      movementBonus += 10;
++      speedBreakdown.push(`+10 (Monomania)`);
++    }
++
+     char.movement = baseMovement + movementBonus;
+ 
+     // Encumbrance Penalties
+@@ -361,17 +416,45 @@ window.BB_CHARACTER_SHEET = (() => {
+     }
+     
+     // Generate active condition badges
++    
++    window.getConditionIcon = (cond) => {
++        const map = {
++            "Bleeding": { icon: "fa-tint", color: "#EF4444" },
++            "Blinded": { icon: "fa-eye-slash", color: "#9CA3AF" },
++            "Charmed": { icon: "fa-heart", color: "#EC4899" },
++            "Deafened": { icon: "fa-deaf", color: "#9CA3AF" },
++            "Frightened": { icon: "fa-ghost", color: "#8B5CF6" },
++            "Grappled": { icon: "fa-hand-rock", color: "#F59E0B" },
++            "Incapacitated": { icon: "fa-user-injured", color: "#FCD34D" },
++            "Invisible": { icon: "fa-low-vision", color: "#60A5FA" },
++            "Paralyzed": { icon: "fa-bolt", color: "#FBBF24" },
++            "Petrified": { icon: "fa-cubes", color: "#6B7280" },
++            "Poisoned": { icon: "fa-skull-crossbones", color: "#10B981" },
++            "Prone": { icon: "fa-bed", color: "#D97706" },
++            "Restrained": { icon: "fa-link", color: "#F59E0B" },
++            "Silenced": { icon: "fa-comment-slash", color: "#9CA3AF" },
++            "Sleep": { icon: "fa-moon", color: "#3B82F6" },
++            "Stunned": { icon: "fa-star", color: "#FCD34D" },
++            "Submerged": { icon: "fa-water", color: "#3B82F6" },
++            "Unconscious": { icon: "fa-dizzy", color: "#EF4444" },
++            "Unstable": { icon: "fa-balance-scale-right", color: "#F59E0B" }
++        };
++        return map[cond] || { icon: "fa-skull", color: "#fff" };
++    };
++
+     let activeConditionBadges = "";
+     const allConditions = Object.keys(window.BB_DATABASE.CONDITIONS).filter(c => c !== "Exhaustion");
+     allConditions.forEach(c => {
+-      if (char.conditions[c]) {
+-        activeConditionBadges += `<span class="condition-badge"><i class="fas fa-skull"></i> ${c}</span>`;
++      if (char.conditions && char.conditions[c]) {
++        const styleInfo = window.getConditionIcon(c);
++        activeConditionBadges += `<i class="fas ${styleInfo.icon} info-tooltip-trigger" data-type="condition" data-name="${c}" style="color:${styleInfo.color}; font-size:1rem; margin-left:6px; cursor:help;" title="${c}"></i>`;
+       }
+     });
+-    if (char.conditions.exhaustion > 0) {
+-      activeConditionBadges += `<span class="condition-badge" style="color:#EF4444; border-color:#EF4444;"><i class="fas fa-lungs-virus"></i> Exhaustion ${char.conditions.exhaustion}</span>`;
++    if (char.conditions && char.conditions.exhaustion > 0) {
++      activeConditionBadges += `<i class="fas fa-lungs-virus info-tooltip-trigger" data-type="condition" data-name="Exhaustion" style="color:#EF4444; font-size:1rem; margin-left:6px; cursor:help;" title="Exhaustion"></i><strong style="color:#EF4444; font-size:0.75rem; margin-left:2px;">${char.conditions.exhaustion}</strong>`;
+     }
+ 
++
+     // Build character selector dropdown options
+     let selectOptions = "";
+     allChars.forEach(c => {
+@@ -385,12 +468,12 @@ window.BB_CHARACTER_SHEET = (() => {
+       try { tabContentHtml = renderTabContent(char); } catch (e) { tabContentHtml = `<div style="color:red; padding:10px;">renderTabContent Error: ${e.message}<br><pre style="font-size:0.7rem;">${e.stack}</pre></div>`; console.error('renderTabContent error:', e); }
+ 
+       container.innerHTML = `
+-        <div class="sheet-page glass" style="display:flex; flex-direction:column; gap:20px;">
++        <div class="sheet-page glass" style="display:flex; flex-direction:column; gap:20px; position: relative;">
+           <!-- Main Row -->
+-          <div class="sheet-main-row" style="display:flex; flex-wrap:wrap; gap:20px; align-items:stretch;">
++          <div class="sheet-main-row" style="display:grid; grid-template-columns: 320px 350px minmax(300px, 1fr); gap:20px; align-items:stretch; overflow-x:auto; padding-bottom:10px;">
+             
+             <!-- COLUMN 1: Profile & Vitals (Formerly Top Bar) -->
+-            <div class="sheet-col col-vitals glass" style="flex: 0 0 320px; display:flex; flex-direction:column; gap:15px; padding:15px; border-radius:12px; overflow-y:auto; overflow-x:hidden;">
++            <div class="col-vitals glass" style="display:flex; flex-direction:column; gap:15px; padding:15px; border-radius:12px; overflow-y:auto; overflow-x:hidden;">
+               ${topBarHtml}
+             </div>
+ 
+@@ -398,9 +481,10 @@ window.BB_CHARACTER_SHEET = (() => {
+             ${skillsColHtml}
+ 
+             <!-- COLUMN 3: Tabs (Combat, Equipment, Traits, Background, Notes) -->
+-            <div class="sheet-col col-details glass" style="flex: 1; min-width: 300px; display: flex; flex-direction: column;">
++            <div class="col-details glass" style="display: flex; flex-direction: column;">
+               <div class="details-tab-bar" style="flex-shrink: 0; border-bottom:1px solid rgba(255,255,255,0.1);">
+-                <button class="sheet-tab-btn ${activeTab === "spells" ? "active" : ""}" data-tab="spells">Combat</button>
++                <button class="sheet-tab-btn ${activeTab === "combat" ? "active" : ""}" data-tab="combat">Combat</button>
++                <button class="sheet-tab-btn ${activeTab === "attunement" ? "active" : ""}" data-tab="attunement">Attunement</button>
+                 <button class="sheet-tab-btn ${activeTab === "equipment" ? "active" : ""}" data-tab="equipment">Equipment</button>
+                 <button class="sheet-tab-btn ${activeTab === "talents" ? "active" : ""}" data-tab="talents">Traits</button>
+                 <button class="sheet-tab-btn ${activeTab === "background" ? "active" : ""}" data-tab="background">Background</button>
+@@ -412,6 +496,8 @@ window.BB_CHARACTER_SHEET = (() => {
+               </div>
+             </div>
+           </div>
++          
++          ${renderConditionsFlyout(char)}
+         </div>
+       `;
+     } catch (outerErr) {
+@@ -427,6 +513,50 @@ window.BB_CHARACTER_SHEET = (() => {
+     renderRollLog();
+   }
+ 
++  function renderConditionsFlyout(char) {
++    const allConditions = Object.keys(window.BB_DATABASE.CONDITIONS).filter(c => c !== "Exhaustion");
++    const displayStyle = isConditionsFlyoutOpen ? "flex" : "none";
++    return `
++      <!-- Conditions Flyout Panel -->
++      <div id="conditions-flyout" class="conditions-flyout-panel glass" style="display:${displayStyle}; flex-direction:column; position:absolute; left:330px; top:80px; z-index:10000; width:250px; max-height:400px; overflow-y:auto; border:1px solid rgba(255,193,7,0.3); border-radius:8px; padding:15px; box-shadow: 0 4px 15px rgba(0,0,0,0.5);">
++        <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--amber); padding-bottom:5px; margin-bottom:10px;">
++          <h3 style="margin:0;">Conditions</h3>
++          <button id="close-conditions-btn" style="background:transparent; border:none; color:var(--text-light); cursor:pointer; font-size:1.5rem; line-height:1; padding:0;">&times;</button>
++        </div>
++        <div class="conditions-list">
++          ${allConditions.map(c => {
++            const desc = window.BB_DATABASE.CONDITIONS[c].replace(/'/g, "&#39;");
++            return `
++            <div class="condition-toggle-row">
++              <span class="info-tooltip-trigger" style="cursor:help; border-bottom:1px dotted rgba(255,193,7,0.5);" data-html="<h4>${c}</h4><p style='margin:0; font-size:0.85rem; color:#fff;'>${desc}</p>">${c}</span>
++              <label class="switch">
++                <input type="checkbox" class="condition-toggle-cb" data-condition="${c}" ${char.conditions && char.conditions[c] ? 'checked' : ''}>
++                <span class="slider"></span>
++              </label>
++            </div>
++            `;
++          }).join('')}
++        </div>
++        
++        <div class="exhaustion-tracker">
++          <div style="display:flex; justify-content:space-between; align-items:flex-end;">
++            <span class="info-tooltip-trigger" style="cursor:help; border-bottom:1px dotted rgba(255,193,7,0.5);" data-html="<h4>Exhaustion</h4><p style='margin:0; font-size:0.85rem; color:#fff;'>${window.BB_DATABASE.CONDITIONS['Exhaustion'].replace(/\n/g, '<br>').replace(/'/g, '&#39;')}</p>">Exhaustion</span>
++            <span style="font-size:0.75rem; color:var(--text-light);">Level ${(char.conditions && char.conditions.exhaustion) || 0}</span>
++          </div>
++          <div class="exhaustion-levels">
++            <button class="exhaustion-level-btn info-tooltip-trigger ${(char.conditions && char.conditions.exhaustion || 0) === 0 ? 'active' : ''}" data-level="0" data-html="<p style='margin:0; font-size:0.85rem; color:#fff;'>No exhaustion.</p>">--</button>
++            <button class="exhaustion-level-btn info-tooltip-trigger ${(char.conditions && char.conditions.exhaustion || 0) >= 1 ? 'active' : ''}" data-level="1" data-html="<p style='margin:0; font-size:0.85rem; color:#fff;'>1. Disadvantage on ability checks.</p>">1</button>
++            <button class="exhaustion-level-btn info-tooltip-trigger ${(char.conditions && char.conditions.exhaustion || 0) >= 2 ? 'active' : ''}" data-level="2" data-html="<p style='margin:0; font-size:0.85rem; color:#fff;'>2. Stamina costs are doubled.</p>">2</button>
++            <button class="exhaustion-level-btn info-tooltip-trigger ${(char.conditions && char.conditions.exhaustion || 0) >= 3 ? 'active' : ''}" data-level="3" data-html="<p style='margin:0; font-size:0.85rem; color:#fff;'>3. Disadvantage on attacks and saving throws.</p>">3</button>
++            <button class="exhaustion-level-btn info-tooltip-trigger ${(char.conditions && char.conditions.exhaustion || 0) >= 4 ? 'active' : ''}" data-level="4" data-html="<p style='margin:0; font-size:0.85rem; color:#fff;'>4. Hit point maximum is halved.</p>">4</button>
++            <button class="exhaustion-level-btn info-tooltip-trigger ${(char.conditions && char.conditions.exhaustion || 0) >= 5 ? 'active' : ''}" data-level="5" data-html="<p style='margin:0; font-size:0.85rem; color:#fff;'>5. Speed becomes 0, and the creature can&#39;t move.</p>">5</button>
++            <button class="exhaustion-level-btn info-tooltip-trigger ${(char.conditions && char.conditions.exhaustion || 0) >= 6 ? 'active' : ''}" data-level="6" style="border-color:#EF4444; color:#EF4444;" data-html="<p style='margin:0; font-size:0.85rem; color:#fff;'>6. Death.</p>">6</button>
++          </div>
++        </div>
++      </div>
++    `;
++  }
++
+   function renderAttributeRow(char, statKey, statName) {
+     let innateVal = char.stats[statKey];
+     
+@@ -463,65 +593,48 @@ window.BB_CHARACTER_SHEET = (() => {
+       });
+     }
+ 
+-    let totalVal = innateVal + equipBonus;
+-    if (totalVal > 30) totalVal = 30;
+-    
+-    if (statKey === "Int" && char.equipment && char.equipment.head === "Starveil") {
+-      if (totalVal < 18) {
+-        equipDetails.push(`Equipment (Starveil): <span style='float:right; color:var(--amber); font-weight:bold;'>Set to 18</span>`);
+-        equipBonus += (18 - totalVal);
+-        totalVal = 18;
+-      }
++    let classBonus = 0;
++    if (char.class === "Berserker" && char.level >= 10 && (statKey === "Str" || statKey === "Con")) {
++      classBonus = 4;
+     }
+-    
+-    if (statKey === "Wis" && char.equipment && char.equipment.head === "Evergreen") {
+-      if (totalVal < 18) {
+-        equipDetails.push(`Equipment (Evergreen): <span style='float:right; color:var(--amber); font-weight:bold;'>Set to 18</span>`);
+-        equipBonus += (18 - totalVal);
+-        totalVal = 18;
+-      }
++    if (char.class === "Disciple" && char.level >= 10 && (statKey === "Dex" || statKey === "Con")) {
++      classBonus = 4;
+     }
+ 
+-    if (statKey === "Con" && char.equipment && char.equipment.armor === "Heartcord") {
+-      if (totalVal < 18) {
+-        equipDetails.push(`Equipment (Heartcord): <span style='float:right; color:var(--amber); font-weight:bold;'>Set to 18</span>`);
+-        equipBonus += (18 - totalVal);
+-        totalVal = 18;
+-      }
+-    }
+-
+-    if (statKey === "Lck" && char.equipment && char.equipment.hands === "Caspian Clutches") {
+-      if (totalVal < 18) {
+-        equipDetails.push(`Equipment (Caspian Clutches): <span style='float:right; color:var(--amber); font-weight:bold;'>Set to 18</span>`);
+-        equipBonus += (18 - totalVal);
+-        totalVal = 18;
+-      }
+-    }
+-    
+-    if (statKey === "Dex" && char.equipment && char.equipment.feet === "Dragon Riders") {
+-      if (totalVal < 18) {
+-        equipDetails.push(`Equipment (Dragon Riders): <span style='float:right; color:var(--amber); font-weight:bold;'>Set to 18</span>`);
+-        equipBonus += (18 - totalVal);
+-        totalVal = 18;
+-      }
+-    }
+-    
+-    if (statKey === "Str" && char.equipment && char.equipment.waist === "String of Ears") {
+-      if (totalVal < 18) {
+-        equipDetails.push(`Equipment (String of Ears): <span style='float:right; color:var(--amber); font-weight:bold;'>Set to 18</span>`);
+-        equipBonus += (18 - totalVal);
+-        totalVal = 18;
+-      }
+-    }
++    let totalVal = window.BB_STATE.getComputedStat(char, statKey);
+     
+     let breakdown = [];
+     breakdown.push(`Base & Points: <span style='float:right; color:var(--amber); font-weight:bold;'>${baseVal}</span>`);
+     if (ancestryBonus > 0) {
+       breakdown.push(`Ancestry Bonus: <span style='float:right; color:var(--amber); font-weight:bold;'>+${ancestryBonus}</span>`);
+     }
++    if (classBonus > 0) {
++      breakdown.push(`Class Bonus: <span style='float:right; color:var(--amber); font-weight:bold;'>+${classBonus}</span>`);
++    }
+     if (equipBonus > 0) {
+       breakdown = breakdown.concat(equipDetails);
+     }
++    
++    // Add logic to show equipment overrides (Starveil, Heartcord, etc.)
++    if (statKey === "Int" && char.equipment && char.equipment.head === "Starveil" && (innateVal + equipBonus + ancestryBonus + classBonus) < 18) {
++      breakdown.push(`Equipment (Starveil): <span style='float:right; color:var(--amber); font-weight:bold;'>Set to 18</span>`);
++    }
++    if (statKey === "Wis" && char.equipment && char.equipment.head === "Evergreen" && (innateVal + equipBonus + ancestryBonus + classBonus) < 18) {
++      breakdown.push(`Equipment (Evergreen): <span style='float:right; color:var(--amber); font-weight:bold;'>Set to 18</span>`);
++    }
++    if (statKey === "Con" && char.equipment && char.equipment.armor === "Heartcord" && (innateVal + equipBonus + ancestryBonus + classBonus) < 18) {
++      breakdown.push(`Equipment (Heartcord): <span style='float:right; color:var(--amber); font-weight:bold;'>Set to 18</span>`);
++    }
++    if (statKey === "Lck" && char.equipment && char.equipment.hands === "Caspian Clutches" && (innateVal + equipBonus + ancestryBonus + classBonus) < 18) {
++      breakdown.push(`Equipment (Caspian Clutches): <span style='float:right; color:var(--amber); font-weight:bold;'>Set to 18</span>`);
++    }
++    if (statKey === "Dex" && char.equipment && char.equipment.feet === "Dragon Riders" && (innateVal + equipBonus + ancestryBonus + classBonus) < 18) {
++      breakdown.push(`Equipment (Dragon Riders): <span style='float:right; color:var(--amber); font-weight:bold;'>Set to 18</span>`);
++    }
++    if (statKey === "Str" && char.equipment && char.equipment.waist === "String of Ears" && (innateVal + equipBonus + ancestryBonus + classBonus) < 18) {
++      breakdown.push(`Equipment (String of Ears): <span style='float:right; color:var(--amber); font-weight:bold;'>Set to 18</span>`);
++    }
++
+     breakdown.push(`<hr style='border-color: rgba(255,255,255,0.1); margin: 8px 0;'><strong>Total Score: <span style='float:right; color:var(--amber); font-weight:bold;'>${totalVal}</span></strong>`);
+ 
+     const breakdownHtml = breakdown.join("<br>");
+@@ -553,21 +666,51 @@ window.BB_CHARACTER_SHEET = (() => {
+     if (char.level >= 4) restDieSize = 8;
+     if (char.level >= 6) restDieSize = 10;
+     if (char.level >= 8) restDieSize = 12;
++    if (char.level >= 10) restDieSize = 20;
+ 
+-    const availableRestDice = char.restDice !== undefined ? char.restDice : char.level;
++    if (!char.restDice) char.restDice = { used: 0 };
+     const maxRestDice = char.level;
++    const availableRestDice = maxRestDice - char.restDice.used;
++
++    
++    window.getConditionIcon = (cond) => {
++        const map = {
++            "Bleeding": { icon: "fa-tint", color: "#EF4444" },
++            "Blinded": { icon: "fa-eye-slash", color: "#9CA3AF" },
++            "Charmed": { icon: "fa-heart", color: "#EC4899" },
++            "Deafened": { icon: "fa-deaf", color: "#9CA3AF" },
++            "Frightened": { icon: "fa-ghost", color: "#8B5CF6" },
++            "Grappled": { icon: "fa-hand-rock", color: "#F59E0B" },
++            "Incapacitated": { icon: "fa-user-injured", color: "#FCD34D" },
++            "Invisible": { icon: "fa-low-vision", color: "#60A5FA" },
++            "Paralyzed": { icon: "fa-bolt", color: "#FBBF24" },
++            "Petrified": { icon: "fa-cubes", color: "#6B7280" },
++            "Poisoned": { icon: "fa-skull-crossbones", color: "#10B981" },
++            "Prone": { icon: "fa-bed", color: "#D97706" },
++            "Restrained": { icon: "fa-link", color: "#F59E0B" },
++            "Silenced": { icon: "fa-comment-slash", color: "#9CA3AF" },
++            "Sleep": { icon: "fa-moon", color: "#3B82F6" },
++            "Stunned": { icon: "fa-star", color: "#FCD34D" },
++            "Submerged": { icon: "fa-water", color: "#3B82F6" },
++            "Unconscious": { icon: "fa-dizzy", color: "#EF4444" },
++            "Unstable": { icon: "fa-balance-scale-right", color: "#F59E0B" }
++        };
++        return map[cond] || { icon: "fa-skull", color: "#fff" };
++    };
+ 
+     let activeConditionBadges = "";
+     const allConditions = Object.keys(window.BB_DATABASE.CONDITIONS).filter(c => c !== "Exhaustion");
+     allConditions.forEach(c => {
+       if (char.conditions && char.conditions[c]) {
+-        activeConditionBadges += `<span class="condition-badge"><i class="fas fa-skull"></i> ${c}</span>`;
++        const styleInfo = window.getConditionIcon(c);
++        activeConditionBadges += `<i class="fas ${styleInfo.icon} info-tooltip-trigger" data-type="condition" data-name="${c}" style="color:${styleInfo.color}; font-size:1rem; margin-left:6px; cursor:help;" title="${c}"></i>`;
+       }
+     });
+     if (char.conditions && char.conditions.exhaustion > 0) {
+-      activeConditionBadges += `<span class="condition-badge" style="color:#EF4444; border-color:#EF4444;"><i class="fas fa-lungs-virus"></i> Exhaustion ${char.conditions.exhaustion}</span>`;
++      activeConditionBadges += `<i class="fas fa-lungs-virus info-tooltip-trigger" data-type="condition" data-name="Exhaustion" style="color:#EF4444; font-size:1rem; margin-left:6px; cursor:help;" title="Exhaustion"></i><strong style="color:#EF4444; font-size:0.75rem; margin-left:2px;">${char.conditions.exhaustion}</strong>`;
+     }
+ 
++
+     if (char.xp === undefined) char.xp = 0;
+     const xpThresholds = [0, 250, 500, 1000, 2000, 4000, 8000, 16000, 32000, 64000];
+     let nextXp = char.level < 10 ? xpThresholds[char.level] : "Max";
+@@ -580,14 +723,28 @@ window.BB_CHARACTER_SHEET = (() => {
+       xpPercent = Math.max(0, Math.min(100, (earnedThisLevel / neededThisLevel) * 100));
+     }
+ 
++    const unspentPoints = Math.max(0, (char.level - 1) - (char.spentStatPoints || 0));
++
+     const renderAttrBox = (statKey, statName) => {
+         let innateVal = char.stats[statKey];
+         let computedVal = window.BB_STATE.getComputedStat(char, statKey);
+         let mod = window.BB_STATE.getModifier(computedVal);
+         let modStr = mod >= 0 ? "+" + mod : mod;
+         
++        let breakdownStr = `${innateVal} (Base)`;
++        const raceData = window.BB_DATABASE && window.BB_DATABASE.SPECIES ? window.BB_DATABASE.SPECIES.find(s => s.name && s.name.toLowerCase() === (char.race || "").toLowerCase()) : {};
++        if (raceData && raceData.bonuses && raceData.bonuses[statKey]) breakdownStr += `&#10;+${raceData.bonuses[statKey]} (Ancestry)`;
++        const diff = computedVal - innateVal - (raceData && raceData.bonuses && raceData.bonuses[statKey] ? raceData.bonuses[statKey] : 0);
++        if (diff > 0) breakdownStr += `&#10;+${diff} (Equipment/Other)`;
++        
++        let addBtn = "";
++        if (unspentPoints > 0 && computedVal < 30) {
++            addBtn = `<button class="btn btn-xs btn-primary btn-add-stat" data-stat="${statKey}" title="Increase ${statName} (+1)" style="position:absolute; top:-5px; right:-5px; width:20px; height:20px; padding:0; border-radius:50%; font-weight:bold; font-size:0.8rem; z-index:10; display:flex; align-items:center; justify-content:center; box-shadow: 0 0 5px rgba(0,0,0,0.5);">+</button>`;
++        }
++        
+         return `
+-          <div class="attr-box stat-roll-hook glass info-tooltip-trigger" style="display:flex; flex-direction:column; align-items:center; padding:5px 10px; min-width:50px; border:1px solid rgba(255,193,7,0.3); border-radius:8px; cursor:pointer;" data-type="attribute" data-name="${statName}" data-label="${statName}" data-mod="${mod}">
++          <div class="attr-box stat-roll-hook glass info-tooltip-trigger" style="position:relative; display:flex; flex-direction:column; align-items:center; justify-content:center; aspect-ratio:1/1; width:100%; padding:0; box-sizing:border-box; border:1px solid rgba(255,193,7,0.3); border-radius:8px; cursor:pointer;" data-type="attribute" data-name="${statName}" data-html="<h4>${statName} (${statKey})</h4><hr style='border-color:rgba(255,255,255,0.2); margin:5px 0;'><div style='font-size:0.8rem; color:#ddd; white-space:pre-wrap;'>${breakdownStr}</div>" data-label="${statName}" data-mod="${mod}">
++            ${addBtn}
+             <div style="font-size:0.75rem; color:var(--text-light); text-transform:uppercase; margin-bottom:2px;">${statKey}</div>
+             <div style="font-size:1.2rem; font-weight:bold; color:#fff;">${modStr}</div>
+             <div style="font-size:0.75rem; color:#aaa; margin-top:2px;">${computedVal}</div>
+@@ -609,80 +766,115 @@ window.BB_CHARACTER_SHEET = (() => {
+           <div style="position:relative; flex:1;">
+             <button class="btn btn-accent btn-xs" id="short-rest-toggle-btn" style="padding:4px 8px; font-size:0.75rem; width:100%;">Short Rest</button>
+             <div id="short-rest-panel" style="display:none; position:absolute; top:110%; right:0; width:160px; flex-direction:column; gap:6px; padding:8px; border:1px solid var(--amber); border-radius:6px; background:var(--bg-dark); z-index:10000; box-shadow:0 4px 10px rgba(0,0,0,0.8);">
+-              <span style="font-size:0.75rem; color:#fff; text-align:center;">Spend d${restDieSize} Rest Die: <span style="color:var(--amber);">${availableRestDice} / ${maxRestDice}</span></span>
++              <span style="font-size:0.75rem; color:#fff; text-align:center;">d${restDieSize} Rest Die: <span style="color:var(--amber);">${availableRestDice} / ${maxRestDice}</span></span>
+               <button class="btn btn-xs btn-primary short-rest-option" data-pool="hp" ${availableRestDice <= 0 ? "disabled" : ""}>+ Hit Points</button>
+               <button class="btn btn-xs btn-primary short-rest-option" data-pool="mp" ${availableRestDice <= 0 ? "disabled" : ""}>+ Mana Points</button>
+               <button class="btn btn-xs btn-primary short-rest-option" data-pool="sp" ${availableRestDice <= 0 ? "disabled" : ""}>+ Stamina Points</button>
+               <hr style="margin:2px 0; border-color:rgba(255,255,255,0.1);">
+-              <button class="btn btn-xs btn-brown" id="btn-short-rest">Complete Rest (No Dice)</button>
++              <button class="btn btn-xs btn-brown" id="btn-short-rest">Finish Short Rest</button>
+             </div>
+           </div>
+           <button class="btn btn-primary btn-xs info-tooltip-trigger" id="fortune-roll-btn" style="padding:4px 8px; font-size:0.75rem; flex:1;" data-html="<h4>Fortune Roll</h4><p style='margin:0; font-size:0.85rem; color:#fff;'>Roll a d100 + your Luck modifier to discover what you find!</p>">Fortune</button>
+         </div>
+       </div>
+ 
+-      <!-- Col 2: Attributes -->
+-      <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:10px; align-items:center;">
+-        ${renderAttrBox("Str", "Strength")}
+-        ${renderAttrBox("Dex", "Dexterity")}
+-        ${renderAttrBox("Con", "Constitution")}
+-        ${renderAttrBox("Int", "Intelligence")}
+-        ${renderAttrBox("Wis", "Wisdom")}
+-        ${renderAttrBox("Lck", "Luck")}
++      <!-- Col 4: Resources -->
++      <div style="display:flex; flex-direction:column; gap:5px;">
++        <div style="display:flex; flex-direction:column; gap:10px; justify-content:center; align-items:stretch;">
++            <div class="resource-col glass" style="display:flex; flex-direction:column; align-items:center; padding:5px 10px; border-radius:8px; position:relative; overflow:hidden;">
++                <div style="position:absolute; left:0; top:0; height:100%; width:${(char.hp && char.hp.total > 0) ? Math.max(0, Math.min(100, (char.hp.current / char.hp.total) * 100)) : 0}%; background:rgba(239, 68, 68, 0.35); z-index:0; transition:width 0.3s ease;"></div>
++                <div style="position:absolute; right:0; top:0; height:100%; width:${(char.hp && char.hp.total > 0 && char.hp.temp > 0) ? Math.max(0, Math.min(100, (char.hp.temp / char.hp.total) * 100)) : 0}%; background:rgba(255, 255, 255, 0.35); z-index:0; transition:width 0.3s ease;"></div>
++                <div style="position:relative; z-index:1; width:100%;">
++                    <div style="text-align:center; font-size:0.75rem; color:var(--text-light); font-weight:bold; margin-bottom:4px;">Hit Points</div>
++                    <div style="display:flex; justify-content:space-around; align-items:flex-end; width:100%;">
++                        <div style="display:flex; flex-direction:column; align-items:center;">
++                            <div style="font-size:0.6rem; color:#aaa; margin-bottom:2px;">CURRENT</div>
++                            <div style="display:flex; align-items:center;">
++                                <input type="number" class="res-val-input" id="hp-current" value="${(char.hp && char.hp.current) || 0}" style="width:50px; font-size:1rem; padding:2px; text-align:center;">
++                                <span style="margin:0 4px; color:#666;">/</span>
++                                <input type="number" class="res-val-input" id="hp-total" value="${(char.hp && char.hp.total) || 0}" readonly style="width:50px; font-size:1rem; padding:2px; color:#aaa; text-align:center;">
++                            </div>
++                        </div>
++                        <div style="display:flex; flex-direction:column; align-items:center;">
++                            <div style="font-size:0.6rem; color:#aaa; margin-bottom:2px;">TEMP</div>
++                            <input type="number" class="inline-hp-input" id="hp-temp" value="${(char.hp && char.hp.temp) || 0}" style="width:50px; font-size:1rem; padding:2px; text-align:center; background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.1); border-radius:4px; color:var(--amber);">
++                        </div>
++                    </div>
++                </div>
++            </div>
++            <div class="resource-col glass" style="display:flex; flex-direction:column; align-items:center; padding:5px 10px; border-radius:8px; position:relative; overflow:hidden;">
++                <div style="position:absolute; left:0; top:0; height:100%; width:${(char.sp && char.sp.total > 0) ? Math.max(0, Math.min(100, (char.sp.current / char.sp.total) * 100)) : 0}%; background:rgba(64, 192, 87, 0.35); z-index:0; transition:width 0.3s ease;"></div>
++                <div style="position:absolute; right:0; top:0; height:100%; width:${(char.sp && char.sp.total > 0 && char.sp.temp > 0) ? Math.max(0, Math.min(100, (char.sp.temp / char.sp.total) * 100)) : 0}%; background:rgba(255, 255, 255, 0.35); z-index:0; transition:width 0.3s ease;"></div>
++                <div style="position:relative; z-index:1; width:100%;">
++                    <div style="text-align:center; font-size:0.75rem; color:var(--text-light); font-weight:bold; margin-bottom:4px;">Stamina Points</div>
++                    <div style="display:flex; justify-content:space-around; align-items:flex-end; width:100%;">
++                        <div style="display:flex; flex-direction:column; align-items:center;">
++                            <div style="font-size:0.6rem; color:#aaa; margin-bottom:2px;">CURRENT</div>
++                            <div style="display:flex; align-items:center;">
++                                <input type="number" class="res-val-input" id="sp-current" value="${(char.sp && char.sp.current) || 0}" style="width:50px; font-size:1rem; padding:2px; text-align:center;">
++                                <span style="margin:0 4px; color:#666;">/</span>
++                                <input type="number" class="res-val-input" id="sp-total" value="${(char.sp && char.sp.total) || 0}" readonly style="width:50px; font-size:1rem; padding:2px; color:#aaa; text-align:center;">
++                            </div>
++                        </div>
++                        <div style="display:flex; flex-direction:column; align-items:center;">
++                            <div style="font-size:0.6rem; color:#aaa; margin-bottom:2px;">TEMP</div>
++                            <input type="number" class="inline-hp-input" id="sp-temp" value="${(char.sp && char.sp.temp) || 0}" style="width:50px; font-size:1rem; padding:2px; text-align:center; background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.1); border-radius:4px; color:var(--amber);">
++                        </div>
++                    </div>
++                </div>
++            </div>
++            <div class="resource-col glass" style="display:flex; flex-direction:column; align-items:center; padding:5px 10px; border-radius:8px; position:relative; overflow:hidden;">
++                <div style="position:absolute; left:0; top:0; height:100%; width:${(char.mp && char.mp.total > 0) ? Math.max(0, Math.min(100, (char.mp.current / char.mp.total) * 100)) : 0}%; background:rgba(77, 171, 247, 0.35); z-index:0; transition:width 0.3s ease;"></div>
++                <div style="position:absolute; right:0; top:0; height:100%; width:${(char.mp && char.mp.total > 0 && char.mp.temp > 0) ? Math.max(0, Math.min(100, (char.mp.temp / char.mp.total) * 100)) : 0}%; background:rgba(255, 255, 255, 0.35); z-index:0; transition:width 0.3s ease;"></div>
++                <div style="position:relative; z-index:1; width:100%;">
++                    <div style="text-align:center; font-size:0.75rem; color:var(--text-light); font-weight:bold; margin-bottom:4px;">Mana Points</div>
++                    <div style="display:flex; justify-content:space-around; align-items:flex-end; width:100%;">
++                        <div style="display:flex; flex-direction:column; align-items:center;">
++                            <div style="font-size:0.6rem; color:#aaa; margin-bottom:2px;">CURRENT</div>
++                            <div style="display:flex; align-items:center;">
++                                <input type="number" class="res-val-input" id="mp-current" value="${(char.mp && char.mp.current) || 0}" style="width:50px; font-size:1rem; padding:2px; text-align:center;">
++                                <span style="margin:0 4px; color:#666;">/</span>
++                                <input type="number" class="res-val-input" id="mp-total" value="${(char.mp && char.mp.total) || 0}" readonly style="width:50px; font-size:1rem; padding:2px; color:#aaa; text-align:center;">
++                            </div>
++                        </div>
++                        <div style="display:flex; flex-direction:column; align-items:center;">
++                            <div style="font-size:0.6rem; color:#aaa; margin-bottom:2px;">TEMP</div>
++                            <input type="number" class="inline-hp-input" id="mp-temp" value="${(char.mp && char.mp.temp) || 0}" style="width:50px; font-size:1rem; padding:2px; text-align:center; background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.1); border-radius:4px; color:var(--amber);">
++                        </div>
++                    </div>
++                </div>
++            </div>
++        </div>
+       </div>
+ 
+       <!-- Col 3: Vitals -->
+       <div style="display:flex; gap:10px; align-items:center; justify-content:center;">
+-        <div class="def-box glass info-tooltip-trigger" data-type="attribute" data-name="Defense" style="padding:5px 10px; text-align:center; min-width:50px;">
++        <div class="def-box glass info-tooltip-trigger" data-type="attribute" data-name="Defense" data-html="<h4>Defense (DEF)</h4><p style='margin:0; font-size:0.85rem; color:#fff;'>How much physical damage you can mitigate.</p><hr style='border-color:rgba(255,255,255,0.2); margin:5px 0;'><div style='font-size:0.8rem; color:#ddd; white-space:pre-wrap;'>${char.defBreakdownStr}</div>" style="padding:5px 10px; text-align:center; min-width:50px;">
+           <div style="font-size:0.75rem; color:var(--text-light); text-transform:uppercase; margin-bottom:2px;">DEF</div>
+           <input type="number" class="def-input" id="def-val" value="${char.defense}" readonly style="font-size:1.2rem; font-weight:bold; background:transparent; border:none; color:#fff; width:100%; text-align:center; padding:0;">
+         </div>
+-        <div class="def-box glass info-tooltip-trigger" data-type="attribute" data-name="Resilience" style="padding:5px 10px; text-align:center; min-width:50px;">
++        <div class="def-box glass info-tooltip-trigger" data-type="attribute" data-name="Resilience" data-html="<h4>Resilience (RES)</h4><p style='margin:0; font-size:0.85rem; color:#fff;'>How much elemental and divine damage you can mitigate.</p><hr style='border-color:rgba(255,255,255,0.2); margin:5px 0;'><div style='font-size:0.8rem; color:#ddd; white-space:pre-wrap;'>${char.resBreakdownStr}</div>" style="padding:5px 10px; text-align:center; min-width:50px;">
+           <div style="font-size:0.75rem; color:var(--text-light); text-transform:uppercase; margin-bottom:2px;">RES</div>
+           <input type="number" class="def-input" id="res-val" value="${char.resilience}" readonly style="font-size:1.2rem; font-weight:bold; background:transparent; border:none; color:#fff; width:100%; text-align:center; padding:0;">
+         </div>
+-        <div class="def-box glass info-tooltip-trigger" data-type="attribute" data-name="Speed" style="padding:5px 10px; text-align:center; min-width:50px;">
++        <div class="def-box glass info-tooltip-trigger" data-type="attribute" data-name="Speed" data-html="<h4>Speed (SPD)</h4><p style='margin:0; font-size:0.85rem; color:#fff;'>How far you can move during your turn in feet.</p><hr style='border-color:rgba(255,255,255,0.2); margin:5px 0;'><div style='font-size:0.8rem; color:#ddd; white-space:pre-wrap;'>${char.speedBreakdownStr}</div>" style="padding:5px 10px; text-align:center; min-width:50px;">
+           <div style="font-size:0.75rem; color:var(--text-light); text-transform:uppercase; margin-bottom:2px;">SPD</div>
+           <input type="number" class="def-input" id="move-val" value="${char.movement}" readonly style="font-size:1.2rem; font-weight:bold; background:transparent; border:none; color:#fff; width:100%; text-align:center; padding:0;">
+         </div>
+       </div>
+ 
+-      <!-- Col 4: Resources -->
+-      <div style="display:flex; flex-direction:column; gap:5px;">
+-        <div style="display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
+-            <div class="resource-col glass" style="display:flex; flex-direction:column; align-items:center; padding:5px 10px; border-radius:8px;">
+-                <div style="font-size:0.75rem; color:var(--text-light); font-weight:bold;">HP <span style="color:#aaa; font-size:0.6rem; font-weight:normal;">Temp: <input type="number" class="inline-hp-input" id="hp-temp" value="${char.hp.temp || 0}" style="width:25px; padding:0; text-align:center;"></span></div>
+-                <div style="display:flex; align-items:center; margin-top:2px;">
+-                    <input type="number" class="res-val-input" id="hp-current" value="${char.hp.current}" style="width:40px; font-size:1rem; padding:2px; text-align:center;">
+-                    <span style="margin:0 4px; color:#666;">/</span>
+-                    <input type="number" class="res-val-input" id="hp-total" value="${char.hp.total}" readonly style="width:40px; font-size:1rem; padding:2px; color:#aaa; text-align:center;">
+-                </div>
+-            </div>
+-            <div class="resource-col glass" style="display:flex; flex-direction:column; align-items:center; padding:5px 10px; border-radius:8px;">
+-                <div style="font-size:0.75rem; color:var(--text-light); font-weight:bold;">SP <span style="color:#aaa; font-size:0.6rem; font-weight:normal;">Temp: <input type="number" class="inline-hp-input" id="sp-temp" value="${char.sp?.temp || 0}" style="width:25px; padding:0; text-align:center;"></span></div>
+-                <div style="display:flex; align-items:center; margin-top:2px;">
+-                    <input type="number" class="res-val-input" id="sp-current" value="${char.sp.current}" style="width:40px; font-size:1rem; padding:2px; text-align:center;">
+-                    <span style="margin:0 4px; color:#666;">/</span>
+-                    <input type="number" class="res-val-input" id="sp-total" value="${char.sp.total}" readonly style="width:40px; font-size:1rem; padding:2px; color:#aaa; text-align:center;">
+-                </div>
+-            </div>
+-            <div class="resource-col glass" style="display:flex; flex-direction:column; align-items:center; padding:5px 10px; border-radius:8px;">
+-                <div style="font-size:0.75rem; color:var(--text-light); font-weight:bold;">MP <span style="color:#aaa; font-size:0.6rem; font-weight:normal;">Temp: <input type="number" class="inline-hp-input" id="mp-temp" value="${char.mp?.temp || 0}" style="width:25px; padding:0; text-align:center;"></span></div>
+-                <div style="display:flex; align-items:center; margin-top:2px;">
+-                    <input type="number" class="res-val-input" id="mp-current" value="${char.mp.current}" style="width:40px; font-size:1rem; padding:2px; text-align:center;">
+-                    <span style="margin:0 4px; color:#666;">/</span>
+-                    <input type="number" class="res-val-input" id="mp-total" value="${char.mp.total}" readonly style="width:40px; font-size:1rem; padding:2px; color:#aaa; text-align:center;">
+-                </div>
+-            </div>
+-        </div>
++      <!-- Col 2: Attributes -->
++      <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:10px; align-items:center;">
++        ${renderAttrBox("Str", "Strength")}
++        ${renderAttrBox("Dex", "Dexterity")}
++        ${renderAttrBox("Con", "Constitution")}
++        ${renderAttrBox("Int", "Intelligence")}
++        ${renderAttrBox("Wis", "Wisdom")}
++        ${renderAttrBox("Lck", "Luck")}
+       </div>
+ 
+       <!-- Col 5: Conditions & XP -->
+       <div style="display:flex; flex-direction:column; gap:5px; min-width:150px; flex:1;">
+-        <div style="display:flex; justify-content:space-between; align-items:center;">
+-            <strong style="font-size:0.75rem; color:var(--text-light);">Conditions <button id="open-conditions-btn" style="background:transparent; border:none; color:var(--amber); cursor:pointer; font-weight:bold;">+</button></strong>
+-            <div style="display:flex; gap:2px;">${activeConditionBadges}</div>
+-        </div>
+         <div style="display:flex; justify-content:space-between; align-items:center;">
+             <strong class="roll-death-save-btn info-tooltip-trigger" style="font-size:0.75rem; color:var(--text-light); cursor:pointer; border-bottom:1px dashed var(--amber);">Death Saves</strong>
+             <div style="display:flex; gap:4px; font-size:0.7rem;">
+@@ -703,40 +895,13 @@ window.BB_CHARACTER_SHEET = (() => {
+             </div>
+             <input type="number" id="char-xp-input" value="${char.xp}" style="width:50px; background:rgba(0,0,0,0.3); border:1px solid rgba(255,255,255,0.2); color:#fff; padding:2px; border-radius:3px; text-align:right; font-size:0.75rem;"> 
+         </div>
+-      </div>
+-      
+-      <!-- Conditions Flyout Panel -->
+-      <div id="conditions-flyout" class="conditions-flyout-panel glass" style="display:none; position:absolute; right:20px; top:80px; z-index:10000; width:250px; max-height:400px; overflow-y:auto;">
+-        <h3 style="margin-top:0; border-bottom:1px solid var(--amber); padding-bottom:5px; margin-bottom:10px;">Conditions</h3>
+-        <div class="conditions-list">
+-          ${allConditions.map(c => {
+-            const desc = window.BB_DATABASE.CONDITIONS[c].replace(/'/g, "&#39;");
+-            return `
+-            <div class="condition-toggle-row">
+-              <span class="info-tooltip-trigger" style="cursor:help; border-bottom:1px dotted rgba(255,193,7,0.5);" data-html="<h4>${c}</h4><p style='margin:0; font-size:0.85rem; color:#fff;'>${desc}</p>">${c}</span>
+-              <label class="switch">
+-                <input type="checkbox" class="condition-toggle-cb" data-condition="${c}" ${char.conditions[c] ? 'checked' : ''}>
+-                <span class="slider"></span>
+-              </label>
++        <div class="glass" style="display:flex; flex-direction:column; padding:10px; border-radius:8px; margin-top:5px;">
++            <div style="display:flex; justify-content:space-between; align-items:center;">
++                <strong style="font-size:0.75rem; color:var(--text-light);">Conditions <button id="open-conditions-btn" style="background:transparent; border:none; color:var(--amber); cursor:pointer; font-weight:bold; padding:0 4px;">+</button></strong>
++            </div>
++            <div id="active-conditions-container" style="display:flex; flex-wrap:wrap; gap:4px; min-height:24px; align-items:center; margin-top:5px; padding:4px; background:rgba(0,0,0,0.2); border-radius:4px;">
++                ${activeConditionBadges || '<span style="color:#aaa; font-size:0.7rem; font-style:italic;">No active conditions</span>'}
+             </div>
+-            `;
+-          }).join('')}
+-        </div>
+-        
+-        <div class="exhaustion-tracker">
+-          <div style="display:flex; justify-content:space-between; align-items:flex-end;">
+-            <span class="info-tooltip-trigger" style="cursor:help; border-bottom:1px dotted rgba(255,193,7,0.5);" data-html="<h4>Exhaustion</h4><p style='margin:0; font-size:0.85rem; color:#fff;'>${window.BB_DATABASE.CONDITIONS['Exhaustion'].replace(/\n/g, '<br>').replace(/'/g, '&#39;')}</p>">Exhaustion</span>
+-            <span style="font-size:0.75rem; color:var(--text-light);">Level ${char.conditions.exhaustion || 0}</span>
+-          </div>
+-          <div class="exhaustion-levels">
+-            <button class="exhaustion-level-btn info-tooltip-trigger ${(char.conditions.exhaustion || 0) === 0 ? 'active' : ''}" data-level="0" data-html="<p style='margin:0; font-size:0.85rem; color:#fff;'>No exhaustion.</p>">--</button>
+-            <button class="exhaustion-level-btn info-tooltip-trigger ${(char.conditions.exhaustion || 0) >= 1 ? 'active' : ''}" data-level="1" data-html="<p style='margin:0; font-size:0.85rem; color:#fff;'>1. Disadvantage on ability checks.</p>">1</button>
+-            <button class="exhaustion-level-btn info-tooltip-trigger ${(char.conditions.exhaustion || 0) >= 2 ? 'active' : ''}" data-level="2" data-html="<p style='margin:0; font-size:0.85rem; color:#fff;'>2. Stamina costs are doubled.</p>">2</button>
+-            <button class="exhaustion-level-btn info-tooltip-trigger ${(char.conditions.exhaustion || 0) >= 3 ? 'active' : ''}" data-level="3" data-html="<p style='margin:0; font-size:0.85rem; color:#fff;'>3. Disadvantage on attacks and saving throws.</p>">3</button>
+-            <button class="exhaustion-level-btn info-tooltip-trigger ${(char.conditions.exhaustion || 0) >= 4 ? 'active' : ''}" data-level="4" data-html="<p style='margin:0; font-size:0.85rem; color:#fff;'>4. Hit point maximum is halved.</p>">4</button>
+-            <button class="exhaustion-level-btn info-tooltip-trigger ${(char.conditions.exhaustion || 0) >= 5 ? 'active' : ''}" data-level="5" data-html="<p style='margin:0; font-size:0.85rem; color:#fff;'>5. Speed becomes 0, and the creature can&#39;t move.</p>">5</button>
+-            <button class="exhaustion-level-btn info-tooltip-trigger ${(char.conditions.exhaustion || 0) >= 6 ? 'active' : ''}" data-level="6" style="border-color:#EF4444; color:#EF4444;" data-html="<p style='margin:0; font-size:0.85rem; color:#fff;'>6. Death.</p>">6</button>
+-          </div>
+         </div>
+       </div>
+     `;
+@@ -872,12 +1037,12 @@ window.BB_CHARACTER_SHEET = (() => {
+         const breakdownHtml = breakdown.join("<br>");
+ 
+         skillsHTML += `
+-          <div class="skill-item stat-roll-hook glass hover-lift info-tooltip-trigger" style="padding: 1px 6px; margin: 0; display: flex; justify-content: space-between; align-items: center; border-radius: 3px; border: 1px solid rgba(255,255,255,0.05); cursor:pointer;" data-type="skill" data-name="${sk.name}" data-label="${sk.name}" data-mod="${totalMod}" data-html="<h4>${sk.name} Breakdown</h4><p style='margin:0'>${breakdownHtml.replace(/"/g, '&quot;')}</p><hr style='border-color: rgba(255,255,255,0.1); margin: 8px 0;'><p style='font-size:0.85rem; color:#fff; margin:0;'>${(window.BB_DATABASE.SKILL_DESCRIPTIONS[sk.name] || '').replace(/"/g, '&quot;')}</p>">
+-            <div class="skill-label" style="display:flex; align-items:center; gap:6px; overflow:hidden;">
+-              <span class="skill-name" style="font-weight:bold; color:#fff; font-size:0.7rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${sk.name}</span>
+-              <span class="skill-attr" style="color:var(--text-light); font-size:0.55rem; white-space:nowrap;">(${sk.attr})</span>
++          <div class="skill-item stat-roll-hook glass hover-lift info-tooltip-trigger" style="padding: 4px 8px; margin: 0; display: flex; justify-content: space-between; align-items: center; border-radius: 3px; border: 1px solid rgba(255,255,255,0.05); cursor:pointer;" data-type="skill" data-name="${sk.name}" data-label="${sk.name}" data-mod="${totalMod}" data-html="<h4>${sk.name} Breakdown</h4><p style='margin:0'>${breakdownHtml.replace(/"/g, '&quot;')}</p><hr style='border-color: rgba(255,255,255,0.1); margin: 8px 0;'><p style='font-size:0.85rem; color:#fff; margin:0;'>${(window.BB_DATABASE.SKILL_DESCRIPTIONS[sk.name] || '').replace(/"/g, '&quot;')}</p>">
++            <div class="skill-label" style="display:flex; align-items:center; gap:8px; overflow:hidden;">
++              <span class="skill-name" style="font-weight:bold; color:#fff; font-size:0.85rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${sk.name}</span>
++              <span class="skill-attr" style="color:var(--text-light); font-size:0.65rem; white-space:nowrap;">(${sk.attr})</span>
+             </div>
+-            <span class="skill-mod-display" style="color:var(--amber); font-weight:bold; font-size:0.75rem; white-space:nowrap;">${skillModStr}</span>
++            <span class="skill-mod-display" style="color:var(--amber); font-weight:bold; font-size:0.9rem; white-space:nowrap;">${skillModStr}</span>
+           </div>
+         `;
+       });
+@@ -888,12 +1053,12 @@ window.BB_CHARACTER_SHEET = (() => {
+       if (char.vulnerabilities && char.vulnerabilities.length > 0) resHTML += `<div style="font-size:0.75rem; margin-bottom:4px;"><strong style="color:var(--text-light)">Vulnerabilities:</strong> ${char.vulnerabilities.join(', ')}</div>`;
+ 
+       return `
+-        <div style="flex:0 0 350px; display:flex; flex-direction:column; gap:10px; height: 100%;">
++        <div style="display:flex; flex-direction:column; gap:10px; height: 100%;">
+             <div class="card glass" style="flex:1; display:flex; flex-direction:column; padding:15px; border-radius:8px; border:1px solid rgba(255,255,255,0.1); overflow:hidden;">
+               <h3 class="card-header-sm" style="margin-bottom:10px;">
+-                <span class="roll-initiative-btn info-tooltip-trigger" style="cursor:pointer; border-bottom:1px dashed var(--amber); transition:color 0.2s;" onmouseover="this.style.color='var(--amber)'" onmouseout="this.style.color=''" data-html="<h4>Initiative</h4><p style='margin:0; font-size:0.85rem; color:#fff;'>Roll 1d20 + your Dexterity modifier to determine turn order in combat.</p>">Skills (Roll Init)</span>
++                Skills
+               </h3>
+-              <div class="skills-list-container" style="flex:1; display:grid; grid-template-columns: 1fr; grid-auto-rows: max-content; gap:2px; overflow:hidden;">
++              <div class="skills-list-container" style="flex:1; display:grid; grid-template-columns: 1fr; grid-auto-rows: max-content; gap:4px; overflow-y:auto; overflow-x:hidden;">
+                 ${skillsHTML}
+               </div>
+               ${resHTML ? `<div style="margin-top:5px; border-top:1px solid rgba(255,255,255,0.1); padding-top:5px;">${resHTML}</div>` : ''}
+@@ -1127,93 +1292,289 @@ window.BB_CHARACTER_SHEET = (() => {
+       }
+     } 
+     
+-    else if (activeTab === "spells") {
+-      let spellsListHTML = "";
+-      
+-      if (char.spells.length === 0) {
+-        spellsListHTML = `<p class="no-spells-text">No attuned spells or abilities. Open the Compendium to read spell descriptions!</p>`;
+-      } else {
+-        char.spells.forEach(spellId => {
+-          const spell = window.BB_DATABASE.SPELLS.find(s => s.id === spellId);
+-          if (spell) {
+-          let badgeColor = 'var(--mana-blue)';
+-          const cls = spell.class ? spell.class.toLowerCase() : '';
+-          const classColors = {
+-            'archon': '#8B5CF6',
+-            'berserker': '#C0392B',
+-            'disciple': '#D4A017',
+-            'herald': '#D946EF',
+-            'invoker': '#F4D35E',
+-            'justicar': '#2563EB',
+-            'mage': '#3B82F6',
+-            'occultist': '#6D28D9',
+-            'prowler': '#4B5563',
+-            'tracker': '#8B5A2B',
+-            'vanguard': '#EA580C',
+-            'warden': '#16A34A'
+-          };
+-          if (classColors[cls]) {
+-            badgeColor = classColors[cls];
++    else if (activeTab === "combat") {
++      let attacksHtml = ""; // Pre-declare if needed inside, but it's an IIFE right now
++      return `
++        <div style="display:flex; justify-content:center; align-items:flex-start; flex:1; overflow-y:auto;">
++          <div style="flex:1; max-width:600px; display:flex; flex-direction:column; gap:20px; padding-bottom:20px;">
++            ${(function(){return `<div style="display:flex; flex-direction:column;">${''}`})()} <!-- dummy just to isolate context if needed -->
++            
++            <!-- Class Resources Tracker Card -->
++            ${(function() {
++                let trackersHtml = "";
++                let headerExtras = "";
++                if (char.class === "Archon" && char.level >= 4) {
++                  let diceType = "d20";
++                  if (char.level >= 10) diceType = "d8";
++                  else if (char.level >= 8) diceType = "d10";
++                  else if (char.level >= 6) diceType = "d12";
++                  headerExtras = `<button class="btn btn-xs btn-primary inline-roll-btn" data-roll="1${diceType}" data-label="Arcane Instability" style="padding:2px 8px; font-size:0.75rem; display:flex; align-items:center; gap:5px;"><i class="fas fa-dice-d20"></i> Instability (${diceType})</button>`;
++        }
++
++        if (itemName) {
++          displayName = quantity > 1 ? `${itemName} (${quantity})` : itemName;
++          if (char.equipment && Object.values(char.equipment).includes(itemName)) {
++            displayName += " <span style='color:#aaa; font-size:0.85em; font-style:italic; font-weight:normal;'>(Equipped)</span>";
++          }
++          const dbItems = window.BB_DATABASE.ITEMS || [];
++          const miscItems = window.BB_DATABASE.MISC_ITEMS || [];
++          let itemData = dbItems.find(x => x.name === itemName);
++          if (itemData) {
++            itemData = { ...itemData, category: "item" };
++          } else {
++            itemData = miscItems.find(x => x.name === itemName);
++            if (itemData) itemData = { ...itemData, category: "misc" };
+           }
+-          const tagBadge = spell.tag ? `<span class="card-tag tag-badge" style="background: var(--arcane-purple, #9b59b6);">${spell.tag}</span>` : '';
+-          const tooltipHtml = window.BB_COMPENDIUM && window.BB_COMPENDIUM.generateDetailHTML ? window.BB_COMPENDIUM.generateDetailHTML({ ...spell, category: 'spell' }).replace(/"/g, '&quot;') : '';
+ 
+-          spellsListHTML += `
+-            <div class="compendium-card glass" style="position:relative; margin-bottom:12px; display:flex; flex-direction:column;">
+-              <div class="card-tag-row">${tagBadge}<div class="card-tag" style="background: ${badgeColor}">${spell.class || 'SPELL'}</div></div>
+-              <h3 class="card-title info-tooltip-trigger spell-cast-btn" data-html="${tooltipHtml}" data-id="${spellId}" data-cast-type="base" style="cursor: pointer; text-decoration: underline dotted; transition: color 0.2s;" onmouseover="this.style.color='var(--amber)'" onmouseout="this.style.color=''"> ${spell.name}</h3>
+-              <div class="card-meta" style="margin-bottom:8px;">Attunement: ${spell.attunement || 0} | Cost: ${spell.cost} | Activation: ${spell.actTime} | Range: ${spell.range} | Components: ${spell.components} | Duration: ${spell.duration}</div>
+-              <p class="card-description" style="margin-bottom:12px;">${spell.description}</p>
+-              ${spell.overchargeDesc ? `
+-                <div class="spell-overcharge glass" style="background:rgba(255,255,255,0.05); padding:8px; border-radius:4px; font-size:0.85rem; border-left:3px solid ${badgeColor}; margin-bottom:12px;">
+-                  <strong class="spell-cast-btn info-tooltip-trigger" data-html="<h4>Overcharge</h4><p style='margin:0; font-size:0.85rem; color:#fff;'>Overcharging represents a character pushing their mystical, divine, or innate energies beyond their normal limits. Each spell or ability that can be overcharged will describe exactly how its effects change and the predetermined cost associated with overcharging. You must decide to overcharge at the moment you cast or perform.</p>" data-id="${spellId}" data-cast-type="overcharge" style="color:var(--amber); cursor: pointer; text-decoration: underline dotted;">Overcharge (Cost: ${spell.overchargeCost}):</strong> ${spell.overchargeDesc}
+-                </div>
+-              ` : ''}
+-              <button class="btn btn-danger btn-xs btn-unattune" data-id="${spellId}" style="align-self:center; margin-top:auto; padding:4px 16px;">Unattune</button>
+-            </div>
+-          `;
++          if (itemData) {
++            itemTooltip = window.BB_COMPENDIUM && window.BB_COMPENDIUM.generateDetailHTML
++              ? window.BB_COMPENDIUM.generateDetailHTML(itemData).replace(/"/g, '&quot;')
++              : `<h4>${displayName}</h4>`;
++          } else {
++            itemTooltip = `<h4>${displayName}</h4>`;
+           }
+-        });
+-      }
++        }
++        
++        const isOverCapacity = i >= maxSlots;
++        const overcapStyle = isOverCapacity ? "box-shadow: inset 0 0 10px rgba(255,0,0,0.5); border: 1px solid rgba(255,0,0,0.5);" : "border:1px solid rgba(255,255,255,0.2);";
+ 
+-      // Calculate available attunement
+-      let availableAttunement = (char.attunement.total || 0) - (char.attunement.used || 0);
++        return `
++          <div class="inventory-slot ${itemName ? 'info-tooltip-trigger' : ''}" data-drag-index="${i}" data-html="${itemTooltip}" style="position:relative; width:100%; min-height:40px; background:rgba(0,0,0,0.5); ${overcapStyle} border-radius:4px; display:flex; align-items:center; justify-content:flex-start; padding:0 12px; overflow:hidden; cursor:pointer;">
++            ${itemName ? `<span style="font-size:0.85rem; text-align:left; color:${isOverCapacity ? '#ff4d4d' : 'var(--amber)'}; font-weight:bold; pointer-events:none; flex-grow:1;">${displayName}${isOverCapacity ? ' <span style="font-size:0.7rem;color:#ff4d4d;">(Overcapacity)</span>' : ''}</span>` : `<span style="font-size:0.85rem; color:rgba(255,255,255,0.2); pointer-events:none; font-style:italic;">Empty Slot</span>`}
++            <div class="slot-drag-handle" draggable="true" data-index="${i}" style="position:absolute; top:0; left:0; width:100%; height:100%; z-index:10; cursor:grab;" title="${itemName ? 'Drag to move item' : ''}"></div>
++            ${itemName ? `<button class="remove-item-btn" data-index="${i}" style="position:relative; z-index:20; background:rgba(255,0,0,0.6); color:white; border:none; border-radius:50%; width:18px; height:18px; font-size:12px; cursor:pointer; display:flex; align-items:center; justify-content:center; opacity:0.7; transition:opacity 0.2s;" onmouseover="this.style.opacity=1;" onmouseout="this.style.opacity=0.7;" title="Remove Item">├ù</button>` : ''}
++          </div>
++        `;
++      }).join("");
+ 
+-      // Attunement choices (spells not currently attuned, restricted by class)
+-      let attuneOptions = "";
+-      window.BB_DATABASE.SPELLS.forEach(spell => {
+-        if (spell.class === char.class && !char.spells.includes(spell.id)) {
+-          let req = spell.attunement || 0;
+-          let isDisabled = req > availableAttunement;
+-          attuneOptions += `<option value="${spell.id}" ${isDisabled ? 'disabled' : ''}>
+-            ${spell.name} (Attunement: ${req}) ${isDisabled ? '- Not enough slots' : ''}
+-          </option>`;
+-        }
+-      });
++      const eq = char.equipment;
++      let charClass = window.BB_DATABASE.CLASSES.find(c => c.name === char.class) || {};
++      let armorTrainingSet = new Set(charClass.armorTraining || []);
++      let weaponTrainingSet = new Set(charClass.weaponTraining || []);
++
++      if (char.talents.includes("Veiled")) armorTrainingSet.add("Ethereal Armor");
++      if (char.talents.includes("Mercurial")) armorTrainingSet.add("Light Armor");
++      if (char.talents.includes("Bulwark")) armorTrainingSet.add("Medium Armor");
++      if (char.talents.includes("Juggernaut")) armorTrainingSet.add("Heavy Armor");
++      if (char.talents.includes("Aegis")) armorTrainingSet.add("Shields");
++
++      if (char.talents.includes("Martialist")) weaponTrainingSet.add("Martial Weapons");
++      if (char.talents.includes("Colossus")) weaponTrainingSet.add("Great Weapons");
++      if (char.talents.includes("Thaumic")) weaponTrainingSet.add("Focus Weapons");
+ 
++      let armorTrainingList = Array.from(armorTrainingSet).join(", ") || "None";
++      let weaponTrainingList = Array.from(weaponTrainingSet).join(", ") || "None";
+       return `
+-        <div style="display:flex; gap:20px; justify-content:center; align-items:stretch; flex:1; overflow:hidden;">
+-          <div style="flex:1; max-width:500px; display:flex; flex-direction:column;">
+-        <div class="spells-tab-view" style="flex:1; overflow-y:auto; padding-right:10px;">
+-          <div class="spell-attune-panel glass">
+-            <h4 style="margin-bottom: 12px; color: var(--amber);">Attunement Slots: ${char.attunement.used} / ${char.attunement.total}</h4>
+-            <label for="spell-attune-selector">Attune New Spell or Ability:</label>
+-            <div class="attune-controls">
+-              <select id="spell-attune-selector" class="form-control inline-select info-tooltip-trigger" data-type="spell">
+-                <option value="">Choose Attunement</option>
+-                ${attuneOptions}
+-              </select>
+-              <button class="btn btn-primary" id="btn-attune-spell">Attune</button>
++        <div class="equipment-tab-view glass" style="flex: 1; overflow-y:auto; position:relative; display:flex; flex-direction:column; padding:15px;">
++          <div class="equipment-grid">
++            
++            <!-- Left Grid: Equipment Slots -->
++            <div class="paper-doll-grid">
++              ${renderEquipSlot("Head", eq.head, "head", char, "pd-head")}
++              ${renderEquipSlot("Armor", eq.armor, "armor", char, "pd-armor")}
++              ${renderEquipSlot("Hands", eq.hands, "hands", char, "pd-hands")}
++              ${renderEquipSlot("Feet", eq.feet, "feet", char, "pd-feet")}
++              ${renderEquipSlot("Main Hand", eq.mainHand, "mainHand", char, "pd-mainHand")}
++              ${renderEquipSlot("Off Hand", eq.offHand, "offHand", char, "pd-offHand")}
++              ${renderEquipSlot("Waist", eq.waist, "waist", char, "pd-waist")}
++              ${renderEquipSlot("Neck", eq.neck, "neck", char, "pd-neck")}
++              ${renderEquipSlot("Finger", eq.finger1, "finger1", char, "pd-finger1")}
++              ${renderEquipSlot("Finger", eq.finger2, "finger2", char, "pd-finger2")}
+             </div>
++
++            <!-- Right Grid: Training & Wealth -->
++            <div class="wealth-column" style="display:flex; flex-direction:column; gap:15px; background:transparent; border:none; box-shadow:none;">
++              
++
++
++              <!-- Training Section -->
++              <div class="training-card glass" style="padding:15px; border-radius:8px;">
++                <h4 style="margin-top:0; margin-bottom:10px; color:var(--amber); border-bottom:1px solid rgba(255,193,7,0.3); padding-bottom:5px;">Training</h4>
++                <div style="margin-bottom:8px;">
++                  <strong style="color:var(--text-light); font-size:0.85rem;">Armor:</strong>
++                  <div style="font-size:0.85rem; color:#fff; margin-top:2px;">${armorTrainingList}</div>
++                </div>
++                <div>
++                  <strong style="color:var(--text-light); font-size:0.85rem;">Weapons:</strong>
++                  <div style="font-size:0.85rem; color:#fff; margin-top:2px;">${weaponTrainingList}</div>
++                </div>
++              </div>
++
++              <!-- Wallet -->
++              <div class="wallet-card glass" style="padding:15px; border-radius:8px;">
++                <h4 style="margin-top:0; margin-bottom:10px; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:5px;">Wallet</h4>
++              <div class="coin-row bronze">
++                <span class="coin-icon">ΓÜ½</span>
++                <span class="coin-name">Bronze:</span>
++                <input type="number" class="coin-val-input" data-coin="bronze" value="${eq.coins.bronze}">
++              </div>
++              <div class="coin-row silver">
++                <span class="coin-icon">ΓÜ¬</span>
++                <span class="coin-name">Silver:</span>
++                <input type="number" class="coin-val-input" data-coin="silver" value="${eq.coins.silver}">
++              </div>
++              <div class="coin-row gold">
++                <span class="coin-icon">≡ƒƒí</span>
++                <span class="coin-name">Gold:</span>
++                <input type="number" class="coin-val-input" data-coin="gold" value="${eq.coins.gold}">
++              </div>
++              <div class="coin-row platinum">
++                <span class="coin-icon">≡ƒ¬Ö</span>
++                <span class="coin-name">Platinum:</span>
++                <input type="number" class="coin-val-input" data-coin="platinum" value="${eq.coins.platinum}">
++              </div>
++              <div class="coin-row crystal">
++                <span class="coin-icon">≡ƒÆÄ</span>
++                <span class="coin-name">Crystal:</span>
++                <input type="number" class="coin-val-input" data-coin="crystal" value="${eq.coins.crystal}">
++              </div>
++              </div>
++              <!-- Burden -->
++              <div class="card burden-card glass" style="padding:10px 15px; border-radius:8px; margin-top:20px;">
++                <h4 style="margin-top:0; margin-bottom:10px; color:var(--amber); border-bottom:1px solid rgba(255,193,7,0.3); padding-bottom:5px;">Burden</h4>
++                <div style="display:flex; flex-direction:column; gap:8px;">
++                  <div class="mini-stat" style="display:flex; justify-content:space-between; align-items:center; font-size:0.75rem;">
++                    <strong>Encumbrance:</strong>
++                    <span><input type="number" class="inline-hp-input" style="width:40px; margin-right:4px; text-align:right; font-size:0.75rem;" id="encumb-val" value="${char.encumbrance}" readonly> / ${(char.equipment && char.equipment.armor === 'Heartcord' && (char._effectiveCon || char.stats.Con) < 18 ? 18 : (char._effectiveCon || char.stats.Con)) * 10} lbs</span>
++                  </div>
++                  <div class="mini-stat" style="display:flex; justify-content:space-between; align-items:center; font-size:0.75rem;">
++                    <strong>Carry Capacity:</strong>
++                    <span>${(char._effectiveStr || char.stats.Str) * 10} lbs</span>
++                  </div>
++                  <div class="mini-stat" style="display:flex; justify-content:space-between; align-items:center; font-size:0.75rem;">
++                    <strong>Push/Drag/Lift:</strong>
++                    <span>${(char._effectiveStr || char.stats.Str) * (char.equipment && char.equipment.hands === 'Goliath Grippers' ? 40 : 20)} lbs</span>
++                  </div>
++                </div>
++              </div>
++            </div>
++
+           </div>
+-          
+-          <div class="attuned-spells-list">
+-            ${spellsListHTML}
++
++          <!-- Inventory Section -->
++          <div class="inventory-section glass" style="margin-top:20px; padding:15px; border-radius:8px; border:1px solid rgba(255,255,255,0.1);">
++            <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:15px;">
++              <div style="flex:1;">
++                <h2 style="margin-top:0; color:var(--amber); border-bottom:1px solid rgba(255,193,7,0.3); padding-bottom:5px;">Inventory (${maxSlots})</h2>
++                <div style="position:relative; margin-top:10px;">
++                  <input type="text" id="inventory-search" placeholder="Search the compendium to add an item..." style="width:100%; padding:8px; background:rgba(0,0,0,0.5); border:1px solid rgba(255,255,255,0.2); border-radius:4px; color:var(--text-light);">
++                  <div id="inventory-search-results" style="position:absolute; top:100%; left:0; width:100%; max-height:200px; overflow-y:auto; background:#1a1a1a; border:1px solid rgba(255,255,255,0.2); border-radius:4px; z-index:100; display:none; flex-direction:column; box-shadow:0 4px 8px rgba(0,0,0,0.5);"></div>
++                </div>
++                <div style="display:flex; gap:10px; margin-top:10px; align-items: stretch; width: 100%;">
++                  <!-- Containers -->
++                  <div style="display:flex; flex-direction:column; gap:4px; flex: 2; justify-content:center;">
++                    ${renderEquipSlot("Container", eq.container1, "container1", char, "pd-container1")}
++                  </div>
++                  <!-- Discard Dropzone -->
++                  <div id="inventory-trash-zone" style="flex: 1; min-height:50px; background:rgba(255,0,0,0.1); border:1px dashed rgba(255,0,0,0.4); border-radius:4px; display:flex; align-items:center; justify-content:center; color:rgba(255,0,0,0.7); font-size:0.9rem; transition:background 0.2s; text-align: center;">
++                    Discard
++                  </div>
++                </div>
++              </div>
++            </div>
++            <div class="inventory-grid" style="display:flex; flex-direction:column; gap:4px; margin-top:10px; padding-bottom:20px; padding-right: 8px;">
++              ${gridHtml}
++            </div>
+           </div>
+         </div>
+-          </div>
+-          <!-- Right side: Combat Stats -->
+-          <div style="flex:0 0 350px; display:flex; flex-direction:column;">
++      `;
++      } catch (err) {
++        return `<div style="padding:20px; color:red; background:rgba(255,0,0,0.1); border:1px solid red; border-radius:8px;">
++          <h3>Equipment Render Error</h3>
++          <p>${err.message}</p>
++          <pre style="font-size:0.7rem; overflow-x:auto;">${err.stack}</pre>
++        </div>`;
++      }
++    } 
++    
++    else if (activeTab === "combat") {
++      let attacksHtml = ""; // Pre-declare if needed inside, but it's an IIFE right now
++      return `
++        <div style="display:flex; justify-content:center; align-items:flex-start; flex:1; overflow-y:auto;">
++          <div style="flex:1; max-width:600px; display:flex; flex-direction:column; gap:20px; padding-bottom:20px;">
++            ${(function(){return `<div style="display:flex; flex-direction:column;">${''}`})()} <!-- dummy just to isolate context if needed -->
++            
++            <!-- Class Resources Tracker Card -->
++            ${(function() {
++                let trackersHtml = "";
++                let headerExtras = "";
++                if (char.class === "Archon" && char.level >= 4) {
++                  let diceType = "d20";
++                  if (char.level >= 10) diceType = "d8";
++                  else if (char.level >= 8) diceType = "d10";
++                  else if (char.level >= 6) diceType = "d12";
++                  headerExtras = `<button class="btn btn-xs btn-primary inline-roll-btn" data-roll="1${diceType}" data-label="Arcane Instability" style="padding:2px 8px; font-size:0.75rem; display:flex; align-items:center; gap:5px;"><i class="fas fa-dice-d20"></i> Instability (${diceType})</button>`;
++                } else if (char.class === "Berserker") {
++                  headerExtras = `<button class="btn btn-xs btn-danger btn-berserk" style="padding:2px 8px; font-size:0.75rem; display:flex; align-items:center; gap:5px;"><i class="fas fa-fire"></i> Berserk</button>`;
++                } else if (char.class === "Justicar" && char.level >= 8) {
++                    let retroDisabled = (char.trackers && char.trackers["retrogradeUsed"]) ? "disabled" : "";
++                    let retroStyle = retroDisabled ? "opacity:0.5; cursor:not-allowed;" : "";
++                    headerExtras = `<button class="btn btn-xs btn-primary btn-retrograde" style="padding:2px 8px; font-size:0.75rem; display:flex; align-items:center; gap:5px; ${retroStyle}" title="Recover Covenant uses equal to half your Justicar level (rounded up) - Once per Long Rest" ${retroDisabled}><i class="fas fa-undo"></i> In Retrograde</button>`;
++                } else if (char.class === "Mage") {
++                    headerExtras = `<div style="display:flex; gap:5px;">`;
++                    if (char.level >= 1) {
++                      let codexStudy = char.trackers && char.trackers["codexStudy"];
++                      if (codexStudy) {
++                        headerExtras += `<div style="display:flex; align-items:center; gap:5px; font-size:0.75rem; background:rgba(0,0,0,0.3); padding:2px 8px; border-radius:3px; border:1px solid rgba(255,193,7,0.3);">
++                          <i class="fas fa-book-open" style="color:var(--amber);"></i> Studying ${codexStudy.spellName} (${codexStudy.completed}/${codexStudy.required})
++                          <button class="btn btn-xs btn-danger btn-cancel-codex" style="padding:0px 4px; margin-left:5px;" title="Cancel Study">X</button>
++                        </div>`;
++                      } else {
++                        headerExtras += `<button class="btn btn-xs btn-secondary btn-codex-study" style="padding:2px 8px; font-size:0.75rem; display:flex; align-items:center; gap:5px;" title="Attune a spell from any class over multiple long rests."><i class="fas fa-book-open"></i> Codex Study</button>`;
++                      }
++                    }
++                    if (char.level >= 4) {
++                      let medDisabled = (char.trackers && char.trackers["studiousMeditationUsed"]) ? "disabled" : "";
++                      let medStyle = medDisabled ? "opacity:0.5; cursor:not-allowed;" : "";
++                      headerExtras += `<button class="btn btn-xs btn-primary btn-studious-meditation" style="padding:2px 8px; font-size:0.75rem; display:flex; align-items:center; gap:5px; ${medStyle}" title="Regain MP equal to Mage level + INT mod. If max, gain Temp MP instead. Once per Long Rest." ${medDisabled}><i class="fas fa-book-reader"></i> Studious Meditation</button>`;
++                    }
++                    if (char.level >= 10) {
++                      let archmageUses = (char.trackers && char.trackers["archmageUses"]) || 0;
++                      let costText = archmageUses === 0 ? "Free" : (Math.pow(2, archmageUses) + "x MP");
++                      headerExtras += `<button class="btn btn-xs btn-primary btn-archmage" style="padding:2px 8px; font-size:0.75rem; display:flex; align-items:center; gap:5px;" title="Deal max damage on an attuned damage-dealing spell. Cost doubles each use."><i class="fas fa-hat-wizard"></i> Archmage (${costText})</button>`;
++                    }
++                    headerExtras += `</div>`;
++                    if (headerExtras === `<div style="display:flex; gap:5px;"></div>`) headerExtras = "";
++                }
++
++                const hasTrackers = char.availableTrackers && char.availableTrackers.length > 0;
++                
++                if (hasTrackers || headerExtras !== "") {
++                  trackersHtml += `<div class="card class-resources-card glass" style="padding:15px; margin:0; margin-bottom:20px;">`;
++                  trackersHtml += `<h3 class="card-header-sm" style="display:flex; justify-content:space-between; align-items:center;">
++                      <span>Class Resources</span>
++                      ${headerExtras}
++                    </h3>`;
++                  
++                  if (hasTrackers) {
++                    trackersHtml += `<div style="display:flex; flex-direction:column; gap:10px;">`;
++                    char.availableTrackers.forEach((tracker) => {
++                      let currentVal = char.trackers[tracker.name] || 0;
++                      trackersHtml += `<div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:5px;">
++                        <strong style="font-size:0.8rem; color:var(--text-light);">${tracker.name}</strong>`;
++                      if (tracker.type === "checkboxes") {
++                        trackersHtml += `<div style="display:flex; gap:4px; align-items:center;">`;
++                        for (let i = 1; i <= tracker.max; i++) {
++                          trackersHtml += `<input type="checkbox" class="tracker-cb" data-tracker="${tracker.name}" data-index="${i}" ${currentVal >= i ? "checked" : ""}>`;
++                        }
++                        trackersHtml += `</div>`;
++                      } else if (tracker.type === "number") {
++                        trackersHtml += `<div style="display:flex; align-items:center; gap:5px;">
++                          <button class="btn btn-xs btn-secondary tracker-num-btn" data-tracker="${tracker.name}" data-change="-1" style="padding:2px 6px;">-</button>
++                          <input type="number" class="tracker-num-input" data-tracker="${tracker.name}" value="${currentVal}" max="${tracker.max}" min="0" style="width:40px; text-align:center; background:rgba(0,0,0,0.3); color:#fff; border:1px solid rgba(255,255,255,0.2); border-radius:3px; padding:2px;">
++                          <span style="color:#aaa; font-size:0.8rem;">/ ${tracker.max}</span>
++                          <button class="btn btn-xs btn-secondary tracker-num-btn" data-tracker="${tracker.name}" data-change="1" style="padding:2px 6px;">+</button>
++                        </div>`;
++                      }
++                      trackersHtml += `</div>`;
++                    });
++                    trackersHtml += `</div>`;
++                  }
++                  trackersHtml += `</div>`;
++                }
++                return trackersHtml;
++              })()}
++
+             <!-- Action Economy Tracker Card -->
+             <div class="card action-economy-card glass" style="padding:15px; margin:0; margin-bottom:20px;">
+               <h3 class="card-header-sm" style="display:flex; justify-content:space-between; align-items:center;">
+@@ -1273,8 +1634,17 @@ window.BB_CHARACTER_SHEET = (() => {
+ 
+             <div class="card combat-stats-card glass" style="flex:1; padding:15px; margin:0;">
+               <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; border-bottom:1px solid rgba(255,193,7,0.3); padding-bottom:8px;">
+-                <h3 class="card-header-sm" style="margin:0; border:none; padding:0;">Combat</h3>
+-                <button class="btn btn-sm info-tooltip-trigger" id="btn-roll-initiative" data-type="ability" data-name="Initiative" data-html="<h4>Initiative</h4><p style='margin:0; font-size:0.85rem; color:#fff;'>When combat begins, each participant determines when they act by rolling Initiative. To do so, roll a d20 and add your Luck modifier to the result. The final number determines the order in which you take your turns during the clash.</p>" style="background:var(--mana-blue); color:white; border:none; font-weight:bold; padding:4px 12px; font-size:0.8rem; cursor:pointer;">Roll Initiative</button>
++                <h3 class="card-header-sm" style="margin:0; border:none; padding:0; display:flex; align-items:center; gap:10px;">
++                  Combat
++                  <label style="font-size:0.7rem; color:var(--text-light); display:flex; align-items:center; gap:4px; font-weight:normal; cursor:pointer;">
++                    <input type="checkbox" id="track-ammo-cb" ${(char.flags && char.flags.trackAmmo === false) ? "" : "checked"}> Track Ammo
++                  </label>
++                </h3>
++                <div style="display:flex; align-items:center;">
++                  ${char.class === "Disciple" && char.level >= 5 && char.trackers && char.trackers["Battle Meditation Uses"] > 0 ? 
++                    `<button class="btn btn-sm" id="btn-battle-meditation" title="Consume 1 Use of Battle Meditation" style="background:var(--amber); color:black; border:none; font-weight:bold; padding:4px 12px; font-size:0.8rem; cursor:pointer; margin-right:8px;">Battle Meditation</button>` : ''}
++                  <button class="btn btn-sm info-tooltip-trigger" id="btn-roll-initiative" data-type="ability" data-name="Initiative" data-html="<h4>Initiative</h4><p style='margin:0; font-size:0.85rem; color:#fff;'>When combat begins, each participant determines when they act by rolling Initiative. To do so, roll a d20 and add your Luck modifier to the result. The final number determines the order in which you take your turns during the clash.</p>" style="background:var(--mana-blue); color:white; border:none; font-weight:bold; padding:4px 12px; font-size:0.8rem; cursor:pointer;">Roll Initiative</button>
++                </div>
+               </div>
+               <h4 style="margin:15px 0 10px 0; color:var(--amber); font-size:0.9rem; border-bottom:1px solid rgba(255,193,7,0.3); padding-bottom:4px;">Weapon Attacks</h4>
+               <div class="attacks-list" style="display:flex; flex-direction:column; gap:8px;">
+@@ -1284,14 +1654,19 @@ window.BB_CHARACTER_SHEET = (() => {
+                   for (const [slot, itemName] of Object.entries(char.equipment || {})) {
+                     if (!itemName) continue;
+ 
++                    const item = ((window.BB_DATABASE.ITEMS || []).concat(window.BB_DATABASE.MISC_ITEMS || [])).find(i => i.name === itemName);
++
+                     if (slot === 'offHand' && char.equipment.mainHand) {
+                         const mainHandItem = ((window.BB_DATABASE.ITEMS || []).concat(window.BB_DATABASE.MISC_ITEMS || [])).find(i => i.name === char.equipment.mainHand);
+                         if (mainHandItem && ["Double", "Colossal"].includes(mainHandItem.grip)) {
+                             continue;
+                         }
++                        // Dual grip bonus action attack requires two Dual grip weapons
++                        if (item && item.grip === "Dual" && mainHandItem && mainHandItem.grip !== "Dual") {
++                            continue;
++                        }
+                     }
+ 
+-                    const item = ((window.BB_DATABASE.ITEMS || []).concat(window.BB_DATABASE.MISC_ITEMS || [])).find(i => i.name === itemName);
+                     if (item && item.damageDie) {
+                       hasWeaponEquipped = true;
+                       let modVal = 0;
+@@ -1304,7 +1679,8 @@ window.BB_CHARACTER_SHEET = (() => {
+                       if (char.talents && char.talents.includes("Colossus")) w.push("Great");
+                       if (char.talents && char.talents.includes("Thaumic")) w.push("Focus");
+                       
+-                      const hasTraining = item.type ? w.some(tw => tw.includes(item.type)) : true;
++                      const itemTraining = item.training || item.type;
++                      const hasTraining = itemTraining ? w.some(tw => tw === itemTraining || (typeof itemTraining === 'string' && itemTraining.includes(tw)) || (typeof tw === 'string' && tw.includes(itemTraining))) : true;
+ 
+                       let useDamageBonus = item.damageBonus;
+                       let count = 1; 
+@@ -1324,8 +1700,11 @@ window.BB_CHARACTER_SHEET = (() => {
+                         useDamageBonus = "Finesse";
+                       }
+ 
+-                      if (useDamageBonus === "Strength") { modVal = window.BB_STATE.getModifier(char.stats.Str); modStat = "STR"; }
+-                      else if (useDamageBonus === "Dexterity") { modVal = window.BB_STATE.getModifier(char.stats.Dex); modStat = "DEX"; }
++                      if (useDamageBonus === "Strength") { modVal = window.BB_STATE.getModifier(window.BB_STATE.getComputedStat(char, "Str")); modStat = "STR"; }
++                      else if (useDamageBonus === "Dexterity") { modVal = window.BB_STATE.getModifier(window.BB_STATE.getComputedStat(char, "Dex")); modStat = "DEX"; }
++                      else if (useDamageBonus === "Intelligence") { modVal = window.BB_STATE.getModifier(window.BB_STATE.getComputedStat(char, "Int")); modStat = "INT"; }
++                      else if (useDamageBonus === "Wisdom") { modVal = window.BB_STATE.getModifier(window.BB_STATE.getComputedStat(char, "Wis")); modStat = "WIS"; }
++                      else if (useDamageBonus === "Charisma") { modVal = window.BB_STATE.getModifier(window.BB_STATE.getComputedStat(char, "Cha")); modStat = "CHA"; }
+                       
+                       let finesseSelect = "";
+                       if (useDamageBonus === "Finesse") { 
+@@ -1338,11 +1717,11 @@ window.BB_CHARACTER_SHEET = (() => {
+                             <option value="DEX" ${currentOverride === "DEX" ? "selected" : ""}>DEX</option>
+                           </select>
+                         `;
+-                        if (currentOverride === "STR") { modVal = window.BB_STATE.getModifier(char.stats.Str); modStat = "STR"; }
+-                        else if (currentOverride === "DEX") { modVal = window.BB_STATE.getModifier(char.stats.Dex); modStat = "DEX"; }
++                        if (currentOverride === "STR") { modVal = window.BB_STATE.getModifier(window.BB_STATE.getComputedStat(char, "Str")); modStat = "STR"; }
++                        else if (currentOverride === "DEX") { modVal = window.BB_STATE.getModifier(window.BB_STATE.getComputedStat(char, "Dex")); modStat = "DEX"; }
+                         else {
+-                          const strMod = window.BB_STATE.getModifier(char.stats.Str);
+-                          const dexMod = window.BB_STATE.getModifier(char.stats.Dex);
++                          const strMod = window.BB_STATE.getModifier(window.BB_STATE.getComputedStat(char, "Str"));
++                          const dexMod = window.BB_STATE.getModifier(window.BB_STATE.getComputedStat(char, "Dex"));
+                           if (strMod >= dexMod) { modVal = strMod; modStat = "STR"; }
+                           else { modVal = dexMod; modStat = "DEX"; }
+                         }
+@@ -1352,6 +1731,7 @@ window.BB_CHARACTER_SHEET = (() => {
+                         modVal = 0;
+                         modStat = "None";
+                       }
++                      if (modVal < 0) modVal = 0;
+                       
+                       if (item.grip === "Single") {
+                         let hasOtherWeapon = false;
+@@ -1400,13 +1780,78 @@ window.BB_CHARACTER_SHEET = (() => {
+                       let labelPrefix = isImprovised ? "Improvised " : "";
+                       let titleStr = `Roll ${count}d${type} ${modVal >= 0 ? '+'+modVal : modVal} (Crit Range: ${finalCritRange})`;
+                       
+-                      attacksHtml += `<button class="btn btn-secondary attack-roll-btn" data-slot="${slot}" data-grip="${isImprovised ? '' : (item.grip || '')}" data-label="Damage: ${labelPrefix}${item.name}" data-count="${count}" data-type="${type}" data-mod="${modVal}" data-crit="${finalCritRange}" data-bowmens="${bowmensBonus}" style="display:flex; justify-content:space-between; align-items:center; width:100%; padding:8px 12px; font-family:var(--font-mono); font-size:0.85rem; text-align:left; border:1px solid rgba(255,255,255,0.1); background:rgba(0,0,0,0.3); cursor:pointer;" title="${titleStr}"><span>${labelPrefix}${item.name} <span style="color:#fff; font-size:0.75rem;">(${slot})</span></span><span style="color:var(--amber); display:flex; align-items:center;">${count}d${type} ${modVal >= 0 ? '+'+modVal : modVal} ${item.damageType || ""} <span style="font-size:0.7rem; color:#fff; margin-left:4px;">(${modStat})</span>${finesseSelect}</span></button>`;
++                      let displaySlot = slot === "mainHand" ? "Main Hand" : (slot === "offHand" ? "Off Hand" : slot.charAt(0).toUpperCase() + slot.slice(1));
++                      let modDisplay = (modVal !== 0 || modStat !== "None") ? ` ${modVal >= 0 ? '+'+modVal : modVal}` : "";
++                      let statDisplay = modStat !== "None" ? ` <span style="font-size:0.7rem; color:#fff; margin-left:4px;">(${modStat})</span>` : "";
++                      
++                      let extraDmgLabel = "";
++                      if (char.class === "Justicar" && char.level >= 5 && item.type !== "Bow" && item.type !== "Throwing") {
++                        if (char.level >= 10) {
++                          extraDmgLabel = ` <span style="color:#a855f7; font-size:0.8rem; margin-left:4px;" title="Ascendency: +2d8 Magic">+ 2d8 Magic</span>`;
++                        } else {
++                          extraDmgLabel = ` <span style="color:#a855f7; font-size:0.8rem; margin-left:4px;" title="Celestial Strikes: +1d8 Magic">+ 1d8 Magic</span>`;
++                        }
++                      }
++                      
++                      let qtyStr = "";
++                      let ammoName = null;
++                      if (["Dart", "Throwing Knife", "Bola"].includes(item.name)) ammoName = item.name;
++                      else if (item.type && item.type.includes("Bow") && !item.name.includes("Crossbow")) ammoName = "Arrow";
++                      else if (item.name.includes("Crossbow")) ammoName = "Crossbow Bolt";
++                      
++                      if (ammoName && !(char.flags && char.flags.trackAmmo === false)) {
++                        let totalQty = 0;
++                        if (char.inventorySlots) {
++                          char.inventorySlots.forEach(s => {
++                            if (typeof s === "string" && s === ammoName) totalQty++;
++                            else if (typeof s === "object" && s && s.name === ammoName) totalQty += (s.quantity || 1);
++                          });
++                        }
++                        qtyStr = ` <span style="color:#ef4444; font-size:0.75rem; margin-left:4px;">(Ammo: ${totalQty})</span>`;
++                      }
++                      
++                      attacksHtml += `<button class="btn btn-secondary attack-roll-btn" data-slot="${slot}" data-grip="${isImprovised ? '' : (item.grip || '')}" data-label="Damage: ${labelPrefix}${item.name}" data-count="${count}" data-type="${type}" data-mod="${modVal}" data-crit="${finalCritRange}" data-bowmens="${bowmensBonus}" style="display:flex; justify-content:space-between; align-items:center; width:100%; padding:8px 12px; font-family:var(--font-mono); font-size:0.85rem; text-align:left; border:1px solid rgba(255,255,255,0.1); background:rgba(0,0,0,0.3); cursor:pointer;" title="${titleStr}"><span>${labelPrefix}${item.name}${qtyStr} <span style="color:#fff; font-size:0.75rem;">(${displaySlot})</span></span><span style="color:var(--amber); display:flex; align-items:center;">${count}d${type}${modDisplay} ${item.damageType || ""}${statDisplay}${extraDmgLabel}${finesseSelect}</span></button>`;
+                     }
+                   }
+ 
+                   if (!hasWeaponEquipped || char.class === "Disciple") {
+-                    let strMod = window.BB_STATE.getModifier(char.stats.Str);
+-                    attacksHtml += `<button class="btn btn-secondary attack-roll-btn" data-slot="unarmed" data-grip="" data-label="Damage: Unarmed Strike" data-count="1" data-type="1" data-mod="${strMod}" data-crit="0" data-bowmens="0" style="display:flex; justify-content:space-between; align-items:center; width:100%; padding:8px 12px; font-family:var(--font-mono); font-size:0.85rem; text-align:left; border:1px solid rgba(255,255,255,0.1); background:rgba(0,0,0,0.3); cursor:pointer;" title="Roll 1 Bludgeoning ${strMod >= 0 ? '+'+strMod : strMod} (Crit Range: 0)"><span>Unarmed Strike <span style="color:#fff; font-size:0.75rem;">(Body)</span></span><span style="color:var(--amber); display:flex; align-items:center;">1 ${strMod >= 0 ? '+'+strMod : strMod} Bludgeoning <span style="font-size:0.7rem; color:#fff; margin-left:4px;">(STR)</span></span></button>`;
++                    let strMod = window.BB_STATE.getModifier(window.BB_STATE.getComputedStat(char, "Str"));
++                    let modToUse = strMod;
++                    let statLabel = "STR";
++                    let diceType = 1;
++                    let displayDmg = "1";
++                    
++                    if (char.class === "Disciple") {
++                      let dexMod = window.BB_STATE.getModifier(window.BB_STATE.getComputedStat(char, "Dex"));
++                      if (dexMod > strMod) {
++                        modToUse = dexMod;
++                        statLabel = "DEX";
++                      }
++                      
++                      if (char.level >= 10) diceType = 20;
++                      else if (char.level >= 8) diceType = 12;
++                      else if (char.level >= 6) diceType = 10;
++                      else if (char.level >= 4) diceType = 8;
++                      else if (char.level >= 2) diceType = 6;
++                      else diceType = 4;
++                      displayDmg = "1d" + diceType;
++                    }
++                    if (modToUse < 0) modToUse = 0;
++                    
++                    let extraDmgLabelUnarmed = "";
++                    if (char.class === "Justicar" && char.level >= 5) {
++                      if (char.level >= 10) {
++                        extraDmgLabelUnarmed = ` <span style="color:#a855f7; font-size:0.8rem; margin-left:4px;" title="Ascendency: +2d8 Magic">+ 2d8 Magic</span>`;
++                      } else {
++                        extraDmgLabelUnarmed = ` <span style="color:#a855f7; font-size:0.8rem; margin-left:4px;" title="Celestial Strikes: +1d8 Magic">+ 1d8 Magic</span>`;
++                      }
++                    }
++                    
++                    attacksHtml += `<button class="btn btn-secondary attack-roll-btn" data-slot="unarmed" data-grip="" data-label="Damage: Unarmed Strike" data-count="1" data-type="${diceType}" data-mod="${modToUse}" data-crit="0" data-bowmens="0" style="display:flex; justify-content:space-between; align-items:center; width:100%; padding:8px 12px; font-family:var(--font-mono); font-size:0.85rem; text-align:left; border:1px solid rgba(255,255,255,0.1); background:rgba(0,0,0,0.3); cursor:pointer;" title="Roll ${displayDmg} Bludgeoning ${modToUse >= 0 ? '+'+modToUse : modToUse} (Crit Range: 0)"><span>Unarmed Strike <span style="color:#fff; font-size:0.75rem;">(Body)</span></span><span style="color:var(--amber); display:flex; align-items:center;">${displayDmg} ${modToUse >= 0 ? '+'+modToUse : modToUse} Bludgeoning <span style="font-size:0.7rem; color:#fff; margin-left:4px;">(${statLabel})</span>${extraDmgLabelUnarmed}</span></button>`;
++                    
++                    if (char.class === "Disciple") {
++                      attacksHtml += `<button class="btn btn-secondary attack-roll-btn" data-slot="flowing_combo" data-grip="" data-label="Damage: Flowing Combination" data-count="1" data-type="${diceType}" data-mod="${modToUse}" data-crit="0" data-bowmens="0" style="display:flex; justify-content:space-between; align-items:center; width:100%; padding:8px 12px; font-family:var(--font-mono); font-size:0.85rem; text-align:left; border:1px solid rgba(255,255,255,0.1); background:rgba(0,0,0,0.3); cursor:pointer; margin-top:4px;" title="Roll ${displayDmg} Bludgeoning ${modToUse >= 0 ? '+'+modToUse : modToUse} (Crit Range: 0) - Costs a Bonus Action"><span>Flowing Combination <span style="color:#fff; font-size:0.75rem;">(Bonus Action)</span></span><span style="color:var(--amber); display:flex; align-items:center;">${displayDmg} ${modToUse >= 0 ? '+'+modToUse : modToUse} Bludgeoning <span style="font-size:0.7rem; color:#fff; margin-left:4px;">(${statLabel})</span></span></button>`;
++                    }
+                   }
+ 
+                   let consumableCounts = {};
+@@ -1485,6 +1930,158 @@ window.BB_CHARACTER_SHEET = (() => {
+               </div>
+             </div>
+ 
++          
++          </div>
++        </div>
++      `;
++    }
++
++    else if (activeTab === "attunement") {
++      let spellsListHTML = "";
++      char.imbuedSpells = char.imbuedSpells || {};
++      const allSpells = char.spells.concat(Object.values(char.imbuedSpells)).concat(char.grantedAbilities || []);
++      
++      // Deduplicate to prevent an ability granted multiple ways from showing twice
++      const uniqueSpells = [...new Set(allSpells)];
++
++      if (uniqueSpells.length === 0) {
++        spellsListHTML = `<p class="no-spells-text">No attuned spells or abilities. Open the compendium to see your available options.</p>`;
++      } else {
++        uniqueSpells.forEach(spellId => {
++          const spell = window.BB_DATABASE.SPELLS.find(s => s.id === spellId);
++          if (spell) {
++          let badgeColor = 'var(--mana-blue)';
++          const cls = spell.class ? spell.class.toLowerCase() : '';
++          const classColors = {
++            'archon': '#8B5CF6',
++            'berserker': '#C0392B',
++            'disciple': '#D4A017',
++            'herald': '#D946EF',
++            'invoker': '#F4D35E',
++            'justicar': '#2563EB',
++            'mage': '#3B82F6',
++            'occultist': '#6D28D9',
++            'prowler': '#4B5563',
++            'tracker': '#8B5A2B',
++            'vanguard': '#EA580C',
++            'warden': '#16A34A'
++          };
++          if (classColors[cls]) {
++            badgeColor = classColors[cls];
++          }
++          const tagBadge = spell.tag ? `<span class="card-tag tag-badge" style="background: var(--arcane-purple, #9b59b6);">${spell.tag}</span>` : '';
++          const tooltipHtml = window.BB_COMPENDIUM && window.BB_COMPENDIUM.generateDetailHTML ? window.BB_COMPENDIUM.generateDetailHTML({ ...spell, category: 'spell' }).replace(/"/g, '&quot;') : '';
++
++          spellsListHTML += `
++            <div class="compendium-card glass" style="position:relative; margin-bottom:12px; display:flex; flex-direction:column;">
++              <div class="card-tag-row">${tagBadge}<div class="card-tag" style="background: ${badgeColor}">${spell.class || 'SPELL'}</div></div>
++              <h3 class="card-title info-tooltip-trigger spell-cast-btn" data-html="${tooltipHtml}" data-id="${spellId}" data-cast-type="base" style="cursor: pointer; text-decoration: underline dotted; transition: color 0.2s;" onmouseover="this.style.color='var(--amber)'" onmouseout="this.style.color=''"> ${spell.name}</h3>
++              <div class="card-meta" style="margin-bottom:8px;">Attunement: ${spell.attunement || 0} | Cost: ${spell.cost} | Activation: ${spell.actTime} | Range: ${spell.range} | Components: ${spell.components} | Duration: ${spell.duration}</div>
++              <p class="card-description" style="margin-bottom:12px;">${spell.description}</p>
++              ${spell.overchargeDesc ? `
++                <div class="spell-overcharge glass" style="background:rgba(255,255,255,0.05); padding:8px; border-radius:4px; font-size:0.85rem; border-left:3px solid ${badgeColor}; margin-bottom:12px;">
++                  <strong class="spell-cast-btn info-tooltip-trigger" data-html="<h4>Overcharge</h4><p style='margin:0; font-size:0.85rem; color:#fff;'>Overcharging represents a character pushing their mystical, divine, or innate energies beyond their normal limits. Each spell or ability that can be overcharged will describe exactly how its effects change and the predetermined cost associated with overcharging. You must decide to overcharge at the moment you cast or perform.</p>" data-id="${spellId}" data-cast-type="overcharge" style="color:var(--amber); cursor: pointer; text-decoration: underline dotted;">Overcharge (Cost: ${spell.overchargeCost}):</strong> ${spell.overchargeDesc}
++                </div>
++              ` : ''}
++              ${char.spells.includes(spellId) ? `<button class="btn btn-danger btn-xs btn-unattune" data-id="${spellId}" style="align-self:center; margin-top:auto; padding:4px 16px;">Unattune</button>` : 
++                (char.grantedAbilities || []).includes(spellId) ? `<div style="text-align:center; margin-top:auto; font-size:0.8rem; color:var(--amber); border: 1px solid var(--amber); border-radius: 4px; padding: 4px;">Class-Granted</div>` :
++                `<div style="text-align:center; margin-top:auto; font-size:0.8rem; color:var(--mana-blue); border: 1px solid var(--mana-blue); border-radius: 4px; padding: 4px;">Item-Granted</div>`}
++            </div>
++          `;
++          }
++        });
++      }
++
++      // Calculate available attunement
++      let availableAttunement = (char.attunement.total || 0) - (char.attunement.used || 0);
++
++      // Attunement choices (spells not currently attuned, restricted by class)
++      let attuneOptions = "";
++      window.BB_DATABASE.SPELLS.forEach(spell => {
++        if (spell.class === char.class && !char.spells.includes(spell.id) && !Object.values(char.imbuedSpells || {}).includes(spell.id) && (!char.grantedAbilities || !char.grantedAbilities.includes(spell.id))) {
++          let req = spell.attunement || 0;
++          let isDisabled = req > availableAttunement;
++          attuneOptions += `<option value="${spell.id}" ${isDisabled ? 'disabled' : ''}>
++            ${spell.name} (Attunement: ${req}) ${isDisabled ? '- Not enough slots' : ''}
++          </option>`;
++        }
++      });
++
++      let imbueSectionHTML = "";
++      char.imbuedSpells = char.imbuedSpells || {};
++      
++      const equipKeys = Object.keys(char.equipment || {});
++      equipKeys.forEach(slot => {
++        const itemName = char.equipment[slot];
++        if (!itemName) return;
++        const item = ((window.BB_DATABASE.ITEMS || []).concat(window.BB_DATABASE.MISC_ITEMS || [])).find(i => i.name === itemName);
++        if (item && item.techniqueDesc && item.techniqueDesc.toLowerCase().includes("imbue it into")) {
++          const typeMatch = item.techniqueDesc.match(/select (?:a|an|any) ([a-zA-Z]+) (spell|ability)/i);
++          const filterType = typeMatch ? typeMatch[1].toLowerCase() : null;
++
++          let slotImbueOptions = `<option value="">Choose Spell/Ability to Imbue</option>`;
++          window.BB_DATABASE.SPELLS.forEach(spell => {
++            if (spell.class !== char.class) return;
++            const requiresOne = item.techniqueDesc.toLowerCase().includes("requires one attunement");
++            if (requiresOne && spell.attunement !== 1) return;
++            if (!requiresOne && !spell.attunement) return; // Must have an attunement cost
++            if (filterType) {
++                const spellStr = JSON.stringify(spell).toLowerCase();
++                if (!spellStr.includes(filterType)) return;
++            }
++            if (char.spells.includes(spell.id) || Object.values(char.imbuedSpells).includes(spell.id)) return;
++            slotImbueOptions += `<option value="${spell.id}">${spell.name}</option>`;
++          });
++
++          const currentImbuedId = char.imbuedSpells[slot];
++          let currentImbuedText = "None";
++          if (currentImbuedId) {
++             const imbSpell = window.BB_DATABASE.SPELLS.find(s => s.id === currentImbuedId);
++             if (imbSpell) currentImbuedText = imbSpell.name;
++          }
++
++          imbueSectionHTML += `
++            <div class="spell-attune-panel glass" style="margin-top:15px; border-color:var(--mana-blue);">
++              <h4 style="margin-bottom: 8px; color: var(--mana-blue);">${item.name} (Item-Granted)</h4>
++              <p style="font-size:0.8rem; margin-bottom:8px; color:var(--text-muted);">${item.techniqueDesc}</p>
++              ${currentImbuedId ? 
++                `<div style="display:flex; justify-content:space-between; align-items:center; background:rgba(0,0,0,0.3); padding:8px; border-radius:4px;">
++                   <span><strong>Imbued:</strong> ${currentImbuedText}</span>
++                   <button class="btn btn-danger btn-xs btn-unimbue" data-slot="${slot}" style="padding:4px 12px;">Remove</button>
++                 </div>` : 
++                `<div class="attune-controls">
++                  <select class="form-control inline-select imbue-selector" id="imbue-selector-${slot}" data-slot="${slot}">
++                    ${slotImbueOptions}
++                  </select>
++                  <button class="btn btn-primary btn-imbue-spell" data-slot="${slot}">Imbue</button>
++                </div>`
++              }
++            </div>
++          `;
++        }
++      });
++
++      return `
++        <div style="display:flex; justify-content:center; flex:1; overflow:hidden;">
++          <div style="flex:1; max-width:800px; display:flex; flex-direction:column;">
++        <div class="spells-tab-view" style="flex:1; overflow-y:auto; padding-right:10px;">
++          <div class="spell-attune-panel glass">
++            <h4 style="margin-bottom: 12px; color: var(--amber);">Attunement Slots: ${char.attunement.used} / ${char.attunement.total}</h4>
++            <label for="spell-attune-selector">Attune New Spell or Ability:</label>
++            <div class="attune-controls">
++              <select id="spell-attune-selector" class="form-control inline-select info-tooltip-trigger" data-type="spell">
++                <option value="">Choose Attunement</option>
++                ${attuneOptions}
++              </select>
++              <button class="btn btn-primary" id="btn-attune-spell">Attune</button>
++            </div>
++          </div>
++          ${imbueSectionHTML}
++          
++          <div class="attuned-spells-list">
++            ${spellsListHTML}
++          </div>
++        </div>
+           </div>
+         </div>
+       `;
+@@ -1926,7 +2523,75 @@ window.BB_CHARACTER_SHEET = (() => {
+         window.BB_STATE.setActiveCharacter(e.target.value);
+       });
+     }
++    // Class Resource Trackers
++    document.querySelectorAll(".tracker-cb").forEach(cb => {
++      cb.addEventListener("change", (e) => {
++        const trackerName = e.target.getAttribute("data-tracker");
++        const idx = parseInt(e.target.getAttribute("data-index"));
++        char.trackers = char.trackers || {};
++        if (e.target.checked) {
++           char.trackers[trackerName] = Math.max(char.trackers[trackerName] || 0, idx);
++        } else {
++           char.trackers[trackerName] = idx - 1;
++        }
++        window.BB_STATE.saveCharacter(char);
++        render(); // re-render to update checkbox states properly
++      });
++    });
++
++    document.querySelectorAll(".tracker-num-btn").forEach(btn => {
++      btn.addEventListener("click", (e) => {
++        const trackerName = e.target.getAttribute("data-tracker");
++        const change = parseInt(e.target.getAttribute("data-change"));
++        char.trackers = char.trackers || {};
++        let val = char.trackers[trackerName] || 0;
++        let oldVal = val;
++        val += change;
++        
++        const trackerDef = char.availableTrackers.find(t => t.name === trackerName);
++        if (trackerDef) {
++          val = Math.max(0, Math.min(trackerDef.max, val));
++        } else {
++          val = Math.max(0, val);
++        }
++        
++        let actualChange = val - oldVal;
++        if (trackerName === "Warp Points" && actualChange < 0 && char.class === "Archon" && char.level >= 3) {
++           char.mp.current = Math.min(char.mp.total, (char.mp.current || 0) + (Math.abs(actualChange) * 2));
++           window.BB_DICE.showToastNotification(`Feedback: Regained ${Math.abs(actualChange) * 2} MP!`);
++        }
++        
++        char.trackers[trackerName] = val;
++        window.BB_STATE.saveCharacter(char);
++        render();
++      });
++    });
+ 
++    document.querySelectorAll(".tracker-num-input").forEach(input => {
++      input.addEventListener("change", (e) => {
++        const trackerName = e.target.getAttribute("data-tracker");
++        char.trackers = char.trackers || {};
++        let val = parseInt(e.target.value) || 0;
++        let oldVal = char.trackers[trackerName] || 0;
++        
++        const trackerDef = char.availableTrackers.find(t => t.name === trackerName);
++        if (trackerDef) {
++          val = Math.max(0, Math.min(trackerDef.max, val));
++        } else {
++          val = Math.max(0, val);
++        }
++        
++        let actualChange = val - oldVal;
++        if (trackerName === "Warp Points" && actualChange < 0 && char.class === "Archon" && char.level >= 3) {
++           char.mp.current = Math.min(char.mp.total, (char.mp.current || 0) + (Math.abs(actualChange) * 2));
++           window.BB_DICE.showToastNotification(`Feedback: Regained ${Math.abs(actualChange) * 2} MP!`);
++        }
++        
++        char.trackers[trackerName] = val;
++        window.BB_STATE.saveCharacter(char);
++        render();
++      });
++    });
+     // Action economy checkboxes
+     document.querySelectorAll(".action-cb").forEach(cb => {
+       cb.addEventListener("change", (e) => {
+@@ -1977,121 +2642,205 @@ window.BB_CHARACTER_SHEET = (() => {
+         const actionDesc = targetAction === "bonusAction" ? "Bonus Action" : "Action";
+         window.BB_DICE.showToastNotification(`${actionDesc} consumed: ${actionName}`);
+         
+-        window.BB_APP.renderActiveTab(); // re-render to update the checkboxes and button opacity
++        if (window.BB_APP && window.BB_APP.renderActiveTab) window.BB_APP.renderActiveTab(); // re-render to update the checkboxes and button opacity
+       });
+     });
+ 
++    document.querySelectorAll(".inline-roll-btn").forEach(btn => {
++      btn.addEventListener("click", () => {
++        const label = btn.getAttribute("data-label");
++        const rollStr = btn.getAttribute("data-roll");
++        if (rollStr) {
++          const match = rollStr.match(/(\d+)d(\d+)/);
++          if (match) {
++            const count = parseInt(match[1]);
++            const type = parseInt(match[2]);
++            if (label === "Arcane Instability") {
++              window.BB_DICE.roll(label, count, type, 0, 0, 0, false, "", 0, "", false, (result) => {
++                if (result >= 1 && result <= 3) {
++                  setTimeout(() => {
++                    window.BB_DICE.roll("Instability Effect", 1, 4, 0, 0, 0, false, "", 0, "", false, (d4Result) => {
++                      let effect = "";
++                      if (d4Result === 1) effect = "Expanding Blast: Area of effect increases by 5 ft.";
++                      else if (d4Result === 2) effect = "Surging Power: Dice increases by 1 or DC by 2.";
++                      else if (d4Result === 3) effect = "Elemental Echo: Spell repeats, dealing half damage.";
++                      else if (d4Result === 4) effect = "Volatile Amplification: Apply Overcharge/Warp Effect free.";
++                      
++                      window.BB_DICE.showToastNotification(`Instability Result: ${effect}`);
++                    });
++                  }, 500); // small delay to let first roll finish clearing or sit before starting next roll
++                }
++              });
++            } else {
++              window.BB_DICE.roll(label, count, type, 0, 0, 0, false);
++            }
++          }
++        }
++      });
++    });
+ 
+-    // Attack roll buttons
+-    document.querySelectorAll(".attack-roll-btn").forEach(btn => {
++    document.querySelectorAll(".btn-berserk").forEach(btn => {
+       btn.addEventListener("click", () => {
+-        let label = btn.getAttribute("data-label");
+-        const count = parseInt(btn.getAttribute("data-count"));
+-        const type = parseInt(btn.getAttribute("data-type"));
+-        let mod = parseInt(btn.getAttribute("data-mod"));
+-        const slot = btn.getAttribute("data-slot");
+-        const grip = btn.getAttribute("data-grip");
+-        const critRange = parseInt(btn.getAttribute("data-crit")) || 0;
+-        const bowmens = parseInt(btn.getAttribute("data-bowmens")) || 0;
++        char.trackers = char.trackers || {};
++        char.combatState = char.combatState || { action: false, bonusAction: false, reaction: false, movement: false };
+         
+-        if (bowmens > 0) {
+-          mod += bowmens;
+-          label += " (+1 Bowmen's Bracers)";
++        if (char.combatState.bonusAction) {
++          window.BB_DICE.showToastNotification("You lack the Bonus Action economy to enter Berserk!");
++          return;
+         }
+-        
+-        // Auto-consume action economy
+-        if (!char.combatState) char.combatState = { action: false, bonusAction: false, reaction: false, movement: false };
+-        if (slot === "offHand" && grip === "Dual") {
+-          if (char.combatState.bonusAction) {
+-            window.BB_DICE.showToastNotification("You lack the Bonus Action economy to perform this attack!");
+-            return;
+-          }
++
++        if ((char.trackers["Berserk Charges"] || 0) > 0) {
++          char.trackers["Berserk Charges"] -= 1;
++          
+           char.combatState.bonusAction = true;
+           const cb = document.querySelector('.action-cb[data-action="bonusAction"]');
+           if (cb) cb.checked = true;
+-        } else {
+-          if (char.combatState.action) {
+-            window.BB_DICE.showToastNotification("You lack the Action economy to perform this attack!");
+-            return;
++          
++          let toastMsg = "Entered Berserk Trance!";
++          
++          if (char.level >= 6) {
++            let dexMod = window.BB_STATE.getModifier(window.BB_STATE.getComputedStat(char, "Dex")) || 0;
++            let spRecover = char.level + dexMod;
++            char.sp = char.sp || { current: 0, total: 0, temp: 0 };
++            
++            if (char.sp.current < char.sp.total) {
++              let missing = char.sp.total - char.sp.current;
++              if (spRecover <= missing) {
++                char.sp.current += spRecover;
++              } else {
++                char.sp.current = char.sp.total;
++                char.sp.temp = Math.max(char.sp.temp || 0, spRecover - missing);
++              }
++            } else {
++              char.sp.temp = Math.max(char.sp.temp || 0, spRecover);
++            }
++            toastMsg += `<br>Resurgent Fury: Regained ${spRecover} Stamina!`;
+           }
+-          char.combatState.action = true;
+-          const cb = document.querySelector('.action-cb[data-action="action"]');
+-          if (cb) cb.checked = true;
++          
++          window.BB_STATE.saveCharacter(char);
++          window.BB_DICE.showToastNotification(toastMsg);
++          render();
++        } else {
++          window.BB_DICE.showToastNotification("No Berserk Charges remaining!");
+         }
+-        window.BB_STATE.saveCharacter(char);
++      });
++    });
++
++    document.querySelectorAll(".btn-retrograde").forEach(btn => {
++      btn.addEventListener("click", () => {
++        char.trackers = char.trackers || {};
++        if (char.trackers["retrogradeUsed"]) return;
+         
+-        let advDis = 0;
+-        if (grip === "Colossal") {
+-          advDis = -2;
++        const recoveryAmount = Math.ceil(char.level / 2);
++        const maxCovenant = char.level;
++        
++        let currentUses = char.trackers["Covenant Uses"] || 0;
++        if (currentUses >= maxCovenant) {
++          window.BB_DICE.showToastNotification("Covenant Uses are already at maximum!");
++          return;
+         }
++        
++        let recoverActual = Math.min(maxCovenant - currentUses, recoveryAmount);
++        char.trackers["Covenant Uses"] = currentUses + recoverActual;
++        char.trackers["retrogradeUsed"] = true;
++        window.BB_STATE.saveCharacter(char);
++        window.BB_DICE.showToastNotification(`In Retrograde: Recovered ${recoverActual} Covenant Uses.`);
++        render();
++      });
++    });
+ 
+-        if (slot === "consumable") {
+-          const itemName = label.replace("Damage: ", "").replace("Improvised ", "");
+-          const idx = char.inventorySlots.findIndex(s => {
+-            if (typeof s === "string") return s === itemName;
+-            if (s && typeof s === "object") return s.name === itemName;
+-            return false;
+-          });
+-          if (idx > -1) {
+-            const invSlot = char.inventorySlots[idx];
+-            if (typeof invSlot === "object" && invSlot.quantity > 1) {
+-              invSlot.quantity -= 1;
+-            } else {
+-              char.inventorySlots[idx] = "";
+-            }
+-            window.BB_STATE.saveCharacter(char);
+-            // Delay rendering so the dice roller can find its elements and start smoothly
+-            setTimeout(() => {
+-              if (window.BB_APP && window.BB_APP.renderActiveTab) {
+-                window.BB_APP.renderActiveTab();
+-              }
+-            }, 1000);
+-          }
++    document.querySelectorAll(".btn-studious-meditation").forEach(btn => {
++      btn.addEventListener("click", () => {
++        char.trackers = char.trackers || {};
++        if (char.trackers["studiousMeditationUsed"]) return;
++        
++        const intMod = window.BB_STATE.getModifier(window.BB_STATE.getComputedStat(char, "Int"));
++        const amount = char.level + intMod;
++        
++        if (char.mp.current >= char.mp.total) {
++          char.mp.temp = (char.mp.temp || 0) + amount;
++          window.BB_DICE.showToastNotification(`Studious Meditation: Gained ${amount} Temporary MP.`);
++        } else {
++          char.mp.current = Math.min(char.mp.total, char.mp.current + amount);
++          window.BB_DICE.showToastNotification(`Studious Meditation: Regained ${amount} MP.`);
+         }
+         
+-        window.BB_DICE.roll(label, count, type, mod, advDis, critRange, true, grip); 
++        char.trackers["studiousMeditationUsed"] = true;
++        window.BB_STATE.saveCharacter(char);
++        render();
+       });
+     });
+ 
+-    // Finesse Override Select listener
+-    document.querySelectorAll(".finesse-override-select").forEach(sel => {
+-      sel.addEventListener("click", e => e.stopPropagation()); // prevent attack roll
+-      sel.addEventListener("change", e => {
+-        const slot = e.target.getAttribute("data-slot");
+-        if (!char.finesseOverrides) char.finesseOverrides = {};
+-        char.finesseOverrides[slot] = e.target.value;
++    document.querySelectorAll(".btn-archmage").forEach(btn => {
++      btn.addEventListener("click", () => {
++        char.trackers = char.trackers || {};
++        let uses = char.trackers["archmageUses"] || 0;
++        let costStr = uses === 0 ? "for Free" : `for ${Math.pow(2, uses)}x MP Cost`;
++        
++        char.trackers["archmageUses"] = uses + 1;
+         window.BB_STATE.saveCharacter(char);
+-        window.BB_APP.renderActiveTab();
++        window.BB_DICE.showToastNotification(`Archmage: The next damage spell is maximized ${costStr}!`);
++        render();
+       });
+     });
+ 
+-    // Short Rest (no automatic recovery without rest dice)
+-    const btnShortRest = document.getElementById("btn-short-rest");
+-    if (btnShortRest) {
+-      btnShortRest.addEventListener("click", () => {
+-        if (!char.combatState) char.combatState = {};
+-        char.combatState.action = false;
+-        char.combatState.bonusAction = false;
+-        char.combatState.reaction = false;
+-        char.combatState.movement = false;
++
++    document.querySelectorAll(".btn-codex-study").forEach(btn => {
++      btn.addEventListener("click", () => {
++        const modal = document.getElementById("codex-modal");
++        if (modal) modal.showModal();
++      });
++    });
++
++    const btnCodexClose = document.getElementById("btn-codex-close");
++    if (btnCodexClose) {
++      btnCodexClose.addEventListener("click", () => {
++        const modal = document.getElementById("codex-modal");
++        if (modal) modal.close();
++      });
++    }
++
++    const btnCodexStart = document.getElementById("btn-codex-start");
++    if (btnCodexStart) {
++      btnCodexStart.addEventListener("click", () => {
++        const select = document.getElementById("codex-spell-select");
++        const spellId = select ? select.value : "";
++        if (!spellId) {
++          window.BB_DICE.showToastNotification("Please select a spell first.");
++          return;
++        }
++        
++        const spellData = window.BB_DATABASE.SPELLS.find(s => s.id === spellId);
++        if (!spellData) return;
++        
++        char.trackers = char.trackers || {};
++        char.trackers["codexStudy"] = {
++          spellId: spellId,
++          spellName: spellData.name,
++          required: Math.max(1, spellData.cost || 0),
++          completed: 0
++        };
++        
+         window.BB_STATE.saveCharacter(char);
+-        window.BB_DICE.showToastNotification(`${char.name} took a Short Rest.`);
+-        const pnl = document.getElementById("short-rest-panel");
+-        if (pnl) pnl.style.display = "none";
++        const modal = document.getElementById("codex-modal");
++        if (modal) modal.close();
++        window.BB_DICE.showToastNotification(`Started studying ${spellData.name}!`);
+         render();
+       });
+     }
+ 
+-    // Long Rest fully heals HP, MP, SP and resets saves/temp HP
+-    const btnLongRest = document.getElementById("btn-long-rest");
+-    if (btnLongRest) {
+-      btnLongRest.addEventListener("click", () => {
+-        char.hp.current = char.hp.total;
+-        char.hp.temp = 0;
+-        char.mp.current = char.mp.total;
+-        if (!char.mp.temp) char.mp.temp = 0;
+-        char.mp.temp = 0;
+-        char.sp.current = char.sp.total;
++    document.querySelectorAll(".btn-cancel-codex").forEach(btn => {
++      btn.addEventListener("click", () => {
++        if (confirm("Are you sure you want to abandon your current spell study? All progress will be lost.")) {
++          if (char.trackers && char.trackers["codexStudy"]) {
++            delete char.trackers["codexStudy"];
++            window.BB_STATE.saveCharacter(char);
++            render();
++          }
++        }
++      });
++    });
++
+         if (!char.sp.temp) char.sp.temp = 0;
+         char.sp.temp = 0;
+         char.deathSaves.successes = 0;
+@@ -2153,7 +2902,7 @@ window.BB_CHARACTER_SHEET = (() => {
+       critBonusInput.addEventListener("change", (e) => {
+         char.critBonus = Math.max(0, parseInt(e.target.value) || 0);
+         window.BB_STATE.saveCharacter(char);
+-        window.BB_APP.renderActiveTab();
++        if (window.BB_APP && window.BB_APP.renderActiveTab) window.BB_APP.renderActiveTab();
+       });
+     }
+ 
+@@ -2179,7 +2928,7 @@ window.BB_CHARACTER_SHEET = (() => {
+         char.deathSaves.failures = 0;
+       }
+       window.BB_STATE.saveCharacter(char);
+-      window.BB_APP.renderActiveTab();
++      if (window.BB_APP && window.BB_APP.renderActiveTab) window.BB_APP.renderActiveTab();
+     });
+     if (hpTot) hpTot.addEventListener("change", (e) => {
+       char.hp.total = Math.max(0, parseInt(e.target.value) || 0);
+@@ -2209,20 +2958,10 @@ window.BB_CHARACTER_SHEET = (() => {
+         if (typeof getEquipStatBonus === "function") effectiveLck += getEquipStatBonus(char, "Lck");
+         let lckMod = window.BB_STATE.getModifier ? window.BB_STATE.getModifier(effectiveLck) : Math.floor((effectiveLck - 10) / 2);
+ 
+-        let roll1 = Math.floor(Math.random() * 100) + 1;
+-        let finalRoll = roll1;
+-        let msg = `Fortune Roll: [${roll1}] + ${lckMod} (Luck) = ${finalRoll + lckMod}`;
+-        
+-        if (hasAdvantage) {
+-          let roll2 = Math.floor(Math.random() * 100) + 1;
+-          finalRoll = Math.max(roll1, roll2);
+-          msg = `Fortune Roll (Advantage from Fortunae's Band): [${roll1}, ${roll2}] + ${lckMod} (Luck) = ${finalRoll + lckMod}`;
+-        }
+-        
+-        if (window.BB_STATE && window.BB_STATE.addDiceRoll) {
+-           window.BB_STATE.addDiceRoll("Fortune", 1, 100, lckMod, finalRoll + lckMod, msg);
++        let advMode = hasAdvantage ? 1 : 0;
++        if (window.BB_DICE && window.BB_DICE.roll) {
++           window.BB_DICE.roll("Fortune Roll", 1, 100, lckMod, advMode, 0, false);
+         }
+-        window.BB_DICE.showToastNotification(msg);
+       });
+     }
+ 
+@@ -2230,61 +2969,72 @@ window.BB_CHARACTER_SHEET = (() => {
+     if (rollDeathSaveBtn) {
+       rollDeathSaveBtn.addEventListener("click", () => {
+         if (!char.deathSaves) char.deathSaves = { successes: 0, failures: 0 };
+-        let roll = Math.floor(Math.random() * 20) + 1;
+-        let message = `Rolled a ${roll} for Death Saving Throw. `;
+-
+-        if (roll <= 9) {
+-          let skullBandSlot = null;
+-          if (char.equipment) {
+-            for (const [slot, itemName] of Object.entries(char.equipment)) {
+-              if (itemName === "Skull Band") {
+-                skullBandSlot = slot;
+-                break;
++        
++        const evaluateRoll = (roll, isReroll = false) => {
++          let message = `Rolled a ${roll} for Death Saving Throw. `;
++          
++          if (!isReroll && roll <= 9) {
++            let skullBandSlot = null;
++            if (char.equipment) {
++              for (const [slot, itemName] of Object.entries(char.equipment)) {
++                if (itemName === "Skull Band") {
++                  skullBandSlot = slot;
++                  break;
++                }
+               }
+             }
+-          }
+-          if (skullBandSlot) {
+-            char.equipment[skullBandSlot] = "";
+-            if (Array.isArray(char.inventorySlots)) {
+-              const invIdx = char.inventorySlots.indexOf("Skull Band");
+-              if (invIdx > -1) char.inventorySlots[invIdx] = "";
++            if (skullBandSlot) {
++              char.equipment[skullBandSlot] = "";
++              if (Array.isArray(char.inventorySlots)) {
++                const invIdx = char.inventorySlots.indexOf("Skull Band");
++                if (invIdx > -1) char.inventorySlots[invIdx] = "";
++              }
++              window.BB_DICE.showToastNotification("The Skull Band shatters to bone dust, granting a reroll!");
++              
++              setTimeout(() => {
++                window.BB_DICE.roll("Death Save Reroll (Skull Band)", 1, 20, 0, 0, 0, false, "", 0, "", false, (newRoll) => {
++                  evaluateRoll(newRoll, true);
++                });
++              }, 100);
++              return;
+             }
+-            roll = Math.floor(Math.random() * 20) + 1;
+-            message += `The Skull Band shatters to bone dust, granting a reroll! New roll: ${roll}. `;
+           }
+-        }
+-        
+-        if (roll === 1) {
+-          char.deathSaves.failures += 2;
+-          message += "Critical Failure! (2 Failures)";
+-        } else if (roll >= 2 && roll <= 9) {
+-          char.deathSaves.failures += 1;
+-          message += "Failure.";
+-        } else if (roll >= 10 && roll <= 19) {
+-          char.deathSaves.successes += 1;
+-          message += "Success!";
+-        } else if (roll === 20) {
+-          message += "Critical Success! You regain 1 HP and become conscious.";
+-          char.hp.current = 1;
+-          char.deathSaves.successes = 0;
+-          char.deathSaves.failures = 0;
+-        }
++          
++          if (roll === 1) {
++            char.deathSaves.failures += 2;
++            message += "Critical Failure! (2 Failures)";
++          } else if (roll >= 2 && roll <= 9) {
++            char.deathSaves.failures += 1;
++            message += "Failure.";
++          } else if (roll >= 10 && roll <= 19) {
++            char.deathSaves.successes += 1;
++            message += "Success!";
++          } else if (roll === 20) {
++            message += "Critical Success! You regain 1 HP and become conscious.";
++            char.hp.current = 1;
++            char.deathSaves.successes = 0;
++            char.deathSaves.failures = 0;
++          }
+ 
+-        if (char.deathSaves.successes >= 3 && roll !== 20) {
+-          message += " You have stabilized and regain 1 HP!";
+-          char.hp.current = 1;
+-          char.deathSaves.successes = 0;
+-          char.deathSaves.failures = 0;
+-        } else if (char.deathSaves.failures >= 3) {
+-          message += " You have died.";
+-        }
++          if (char.deathSaves.successes >= 3 && roll !== 20) {
++            message += " You have stabilized and regain 1 HP!";
++            char.hp.current = 1;
++            char.deathSaves.successes = 0;
++            char.deathSaves.failures = 0;
++          } else if (char.deathSaves.failures >= 3) {
++            message += " You have died.";
++          }
++
++          window.BB_DICE.showToastNotification(message);
++          window.BB_STATE.saveCharacter(char);
++          if (window.BB_APP && window.BB_APP.renderActiveTab) window.BB_APP.renderActiveTab();
++        };
+ 
+-        if (window.BB_STATE && window.BB_STATE.addDiceRoll) {
+-          window.BB_STATE.addDiceRoll("Death Saving Throw", 1, 20, 0, roll, `Roll: [${roll}]`);
++        if (window.BB_DICE && window.BB_DICE.roll) {
++          window.BB_DICE.roll("Death Saving Throw", 1, 20, 0, 0, 0, false, "", 0, "", false, (roll) => {
++            evaluateRoll(roll);
++          });
+         }
+-        window.BB_DICE.showToastNotification(message);
+-        window.BB_STATE.saveCharacter(char);
+-        window.BB_APP.renderActiveTab();
+       });
+     }
+ 
+@@ -2301,7 +3051,7 @@ window.BB_CHARACTER_SHEET = (() => {
+            char.deathSaves[type] = idx - 1;
+         }
+         window.BB_STATE.saveCharacter(char);
+-        window.BB_APP.renderActiveTab();
++        if (window.BB_APP && window.BB_APP.renderActiveTab) window.BB_APP.renderActiveTab();
+       });
+     });
+ 
+@@ -2358,26 +3108,31 @@ window.BB_CHARACTER_SHEET = (() => {
+       const allConditions = Object.keys(window.BB_DATABASE.CONDITIONS).filter(c => c !== "Exhaustion");
+       allConditions.forEach(c => {
+         if (char.conditions[c]) {
+-          badges += `<span class="condition-badge"><i class="fas fa-skull"></i> ${c}</span>`;
++          const styleInfo = window.getConditionIcon ? window.getConditionIcon(c) : { icon: "fa-skull", color: "#fff" };
++          badges += `<i class="fas ${styleInfo.icon} info-tooltip-trigger" data-type="condition" data-name="${c}" style="color:${styleInfo.color}; font-size:1rem; margin-left:6px; cursor:help;" title="${c}"></i>`;
+         }
+       });
+       if (char.conditions.exhaustion > 0) {
+-        badges += `<span class="condition-badge" style="color:#EF4444; border-color:#EF4444;"><i class="fas fa-lungs-virus"></i> Exhaustion ${char.conditions.exhaustion}</span>`;
++        badges += `<i class="fas fa-lungs-virus info-tooltip-trigger" data-type="condition" data-name="Exhaustion" style="color:#EF4444; font-size:1rem; margin-left:6px; cursor:help;" title="Exhaustion"></i><strong style="color:#EF4444; font-size:0.75rem; margin-left:2px;">${char.conditions.exhaustion}</strong>`;
+       }
+-      container.innerHTML = badges;
++      container.innerHTML = badges || '<span style="color:#aaa; font-size:0.7rem; font-style:italic;">No active conditions</span>';
+     };
+ 
+     if (openConditionsBtn && conditionsFlyout) {
+       openConditionsBtn.addEventListener("click", (e) => {
+         e.stopPropagation();
+-        conditionsFlyout.style.display = conditionsFlyout.style.display === "none" ? "flex" : "none";
++        isConditionsFlyoutOpen = !isConditionsFlyoutOpen;
++        conditionsFlyout.style.display = isConditionsFlyoutOpen ? "flex" : "none";
+       });
+ 
+-      document.addEventListener("click", (e) => {
+-        if (!conditionsFlyout.contains(e.target) && e.target !== openConditionsBtn) {
++      const closeConditionsBtn = document.getElementById("close-conditions-btn");
++      if (closeConditionsBtn) {
++        closeConditionsBtn.addEventListener("click", (e) => {
++          e.stopPropagation();
++          isConditionsFlyoutOpen = false;
+           conditionsFlyout.style.display = "none";
+-        }
+-      });
++        });
++      }
+ 
+       conditionsFlyout.addEventListener("click", (e) => {
+         e.stopPropagation();
+@@ -2455,7 +3210,8 @@ window.BB_CHARACTER_SHEET = (() => {
+     });
+ 
+     document.querySelectorAll(".btn-add-stat").forEach(btn => {
+-      btn.addEventListener("click", () => {
++      btn.addEventListener("click", (e) => {
++        e.stopPropagation();
+         const stat = btn.getAttribute("data-stat");
+         if ((char.stats[stat] || 10) >= 30) {
+           window.BB_DICE.showToastNotification("Attributes cannot exceed 30!");
+@@ -2482,31 +3238,90 @@ window.BB_CHARACTER_SHEET = (() => {
+     });
+ 
+     // Initiative roll hook
+-    const btnInit = document.getElementById("btn-roll-initiative");
+-    if (btnInit) {
+-      btnInit.addEventListener("click", () => {
+-        let effectiveLck = char.stats.Lck;
+-        if (char.equipment && char.equipment.hands === "Caspian Clutches" && effectiveLck < 18) effectiveLck = 18;
+-        let luckMod = window.BB_STATE.getModifier(effectiveLck);
+-        
+-        let extraModifier = 0;
+-        let extraBreakdown = "";
+-        
+-        if (char.equipment && char.equipment.feet === "Quick Steppers") {
+-          extraModifier += 2;
+-          extraBreakdown += "+2 (Quick Steppers) ";
++    const doInitiativeRoll = (useBattleMeditation) => {
++      let effectiveLck = char.stats.Lck;
++      if (char.equipment && char.equipment.hands === "Caspian Clutches" && effectiveLck < 18) effectiveLck = 18;
++      let luckMod = window.BB_STATE.getModifier(effectiveLck);
++      
++      let extraModifier = 0;
++      let extraBreakdown = "";
++      
++      if (char.equipment && char.equipment.feet === "Quick Steppers") {
++        extraModifier += 2;
++        extraBreakdown += "+2 (Quick Steppers) ";
++      }
++      
++      // Alacrity Talent Bonus (1d4)
++      if (char.talents && char.talents.includes("Alacrity")) {
++        const d4Roll = Math.floor(Math.random() * 4) + 1;
++        extraModifier += d4Roll;
++        extraBreakdown += `+${d4Roll} (Alacrity) `;
++        window.BB_DICE.showToastNotification(`Alacrity Talent: +${d4Roll} to Initiative!`);
++      }
++      let initAdvantage = (char.equipment && Object.values(char.equipment).includes("Moxie Loop")) ? 1 : 0;
++      
++      // Berserker Level 8: Combat Instinct
++      if (char.class === "Berserker" && char.level >= 8) {
++        initAdvantage = 1;
++        if (char.trackers && char.trackers["Berserk Charges"] !== undefined) {
++          const maxBerserk = Math.floor(char.level / 2) + 1;
++          if (char.trackers["Berserk Charges"] < maxBerserk) {
++            char.trackers["Berserk Charges"] += 1;
++            window.BB_STATE.saveCharacter(char);
++            if (window.BB_APP && window.BB_APP.renderActiveTab) window.BB_APP.renderActiveTab();
++            window.BB_DICE.showToastNotification("Combat Instinct: Regained 1 Berserk Charge!");
++          }
+         }
+-        
+-        // Alacrity Talent Bonus (1d4)
+-        if (char.talents.includes("Alacrity")) {
+-          const d4Roll = Math.floor(Math.random() * 4) + 1;
+-          extraModifier += d4Roll;
+-          extraBreakdown += `+${d4Roll} (Alacrity) `;
+-          window.BB_DICE.showToastNotification(`Alacrity Talent: +${d4Roll} to Initiative!`);
++      }
++      
++      // Disciple Level 5: Battle Meditation
++      if (useBattleMeditation && char.class === "Disciple" && char.level >= 5) {
++        if (char.trackers && char.trackers["Battle Meditation Uses"] > 0) {
++          char.trackers["Battle Meditation Uses"] -= 1;
++          let diceType = 4;
++          if (char.level >= 10) diceType = 20;
++          else if (char.level >= 8) diceType = 12;
++          else if (char.level >= 6) diceType = 10;
++          else if (char.level >= 4) diceType = 8;
++          else if (char.level >= 2) diceType = 6;
++          
++          let rollVal = Math.floor(Math.random() * diceType) + 1;
++          let currentAP = char.trackers["Anima Points"] || 0;
++          let maxAP = char.level * 2;
++          char.trackers["Anima Points"] = Math.min(maxAP, currentAP + rollVal);
++          
++          window.BB_STATE.saveCharacter(char);
++          if (window.BB_APP && window.BB_APP.renderActiveTab) window.BB_APP.renderActiveTab();
++          window.BB_DICE.showToastNotification(`Battle Meditation: Rolled 1d${diceType} for ${rollVal} AP!`);
++          
++          // Push to dice log for visibility
++          let logEntry = {
++            timestamp: new Date().toISOString(),
++            characterId: char.id,
++            characterName: char.name,
++            rollType: "Battle Meditation",
++            total: rollVal,
++            breakdown: `[1d${diceType}]`,
++            isCrit: false,
++            isFail: false
++          };
++          let currentLog = window.BB_STATE.getDiceLog();
++          currentLog.unshift(logEntry);
++          if (currentLog.length > 50) currentLog.pop();
++          window.BB_STATE.publish('dice_log_changed');
+         }
+-        let initAdvantage = (char.equipment && Object.values(char.equipment).includes("Moxie Loop")) ? 1 : 0;
+-        window.BB_DICE.roll('Initiative', 1, 20, luckMod, initAdvantage, 0, false, "", extraModifier, extraBreakdown.trim());
+-      });
++      }
++      
++      window.BB_DICE.roll('Initiative', 1, 20, luckMod, initAdvantage, 0, false, "", extraModifier, extraBreakdown.trim());
++    };
++
++    const btnInit = document.getElementById("btn-roll-initiative");
++    if (btnInit) {
++      btnInit.addEventListener("click", () => doInitiativeRoll(false));
++    }
++    const btnBattleMed = document.getElementById("btn-battle-meditation");
++    if (btnBattleMed) {
++      btnBattleMed.addEventListener("click", () => doInitiativeRoll(true));
+     }
+ 
+     // Tab buttons
+@@ -2665,6 +3480,11 @@ window.BB_CHARACTER_SHEET = (() => {
+         const key = input.getAttribute("data-key");
+         char.equipment[key] = e.target.value;
+ 
++        // Clear imbued spell if equipment changes
++        if (char.imbuedSpells && char.imbuedSpells[key]) {
++          delete char.imbuedSpells[key];
++        }
++
+         // Automatically unequip offhand if equipping a 2-handed weapon
+         if (key === "mainHand" && char.equipment.mainHand && char.equipment.offHand) {
+           const mainHandItem = ((window.BB_DATABASE.ITEMS || []).concat(window.BB_DATABASE.MISC_ITEMS || [])).find(i => i.name === char.equipment.mainHand);
+@@ -2677,6 +3497,9 @@ window.BB_CHARACTER_SHEET = (() => {
+             }
+             if (!allowedByVanguard) {
+               char.equipment.offHand = "";
++              if (char.imbuedSpells && char.imbuedSpells.offHand) {
++                delete char.imbuedSpells.offHand;
++              }
+             }
+           }
+         }
+@@ -2733,6 +3556,35 @@ window.BB_CHARACTER_SHEET = (() => {
+       });
+     });
+ 
++    // Imbue spell triggers
++    document.querySelectorAll(".btn-imbue-spell").forEach(btn => {
++      btn.addEventListener("click", () => {
++        const slot = btn.getAttribute("data-slot");
++        const selector = document.getElementById(`imbue-selector-${slot}`);
++        if (!selector || !selector.value) return;
++        char.imbuedSpells = char.imbuedSpells || {};
++        char.imbuedSpells[slot] = selector.value;
++        const spellData = window.BB_DATABASE.SPELLS.find(s => s.id === selector.value);
++        window.BB_STATE.saveCharacter(char);
++        window.BB_DICE.showToastNotification(`Imbued ${spellData ? spellData.name : 'spell'}.`);
++        render();
++      });
++    });
++
++    // Unimbue spell triggers
++    document.querySelectorAll(".btn-unimbue").forEach(btn => {
++      btn.addEventListener("click", () => {
++        const slot = btn.getAttribute("data-slot");
++        if (char.imbuedSpells && char.imbuedSpells[slot]) {
++          const spellData = window.BB_DATABASE.SPELLS.find(s => s.id === char.imbuedSpells[slot]);
++          delete char.imbuedSpells[slot];
++          window.BB_STATE.saveCharacter(char);
++          window.BB_DICE.showToastNotification(`Removed imbued ${spellData ? spellData.name : 'spell'}.`);
++          render();
++        }
++      });
++    });
++
+     // Custom Dropdown triggers
+     document.querySelectorAll(".custom-select-button").forEach(btn => {
+       btn.addEventListener("click", (e) => {
+@@ -3066,19 +3918,55 @@ window.BB_CHARACTER_SHEET = (() => {
+       customRollBtn.addEventListener("click", () => {
+         const input = customRollInput.value;
+         if (!input) return;
+-        const match = input.match(/(\d+)d(\d+)(?:\s*([+-])\s*(\d+))?/i);
+-        if (match) {
+-          const count = parseInt(match[1]);
+-          const type = parseInt(match[2]);
+-          let mod = 0;
+-          if (match[3] && match[4]) {
+-            mod = parseInt(match[4]);
+-            if (match[3] === "-") mod = -mod;
++
++        const cleaned = input.replace(/,/g, '+').replace(/\s+/g, '');
++        const terms = cleaned.match(/[+-]?[^+-]+/g);
++        
++        if (!terms) {
++          if(window.BB_DICE) window.BB_DICE.showToastNotification("Invalid format.");
++          return;
++        }
++
++        let diceList = [];
++        let totalMod = 0;
++        let isValid = true;
++
++        for (let term of terms) {
++          const sign = term.startsWith('-') ? -1 : 1;
++          const val = term.replace(/[+-]/, '');
++          
++          if (val.includes('d') || val.includes('D')) {
++            const parts = val.toLowerCase().split('d');
++            const count = parts[0] === "" ? 1 : parseInt(parts[0]);
++            const type = parseInt(parts[1]);
++            if (!isNaN(type) && !isNaN(count)) {
++              diceList.push({ count, type, sign });
++            } else {
++              isValid = false;
++            }
++          } else {
++            const modVal = parseInt(val);
++            if (!isNaN(modVal)) {
++              totalMod += modVal * sign;
++            } else {
++              isValid = false;
++            }
++          }
++        }
++
++        if (isValid && diceList.length > 0) {
++          if (diceList.length === 1 && diceList[0].sign === 1) {
++            const first = diceList[0];
++            window.BB_DICE.roll(`Custom (${input})`, first.count, first.type, totalMod, 0, 0, false);
++          } else if (window.BB_DICE.rollMixed) {
++            window.BB_DICE.rollMixed(`Custom (${input})`, diceList, totalMod);
++          } else {
++            const first = diceList[0];
++            window.BB_DICE.roll(`Custom (${input})`, first.count, first.type, totalMod, 0, 0, false);
+           }
+-          window.BB_DICE.roll(`Custom (${input})`, count, type, mod, 0, 0, false);
+           setTimeout(() => { if(typeof renderRollLog === "function") renderRollLog(); }, 100);
+         } else {
+-          if(window.BB_DICE) window.BB_DICE.showToastNotification("Invalid format. Use XdY+Z (e.g., 2d6+4)");
++          if(window.BB_DICE) window.BB_DICE.showToastNotification("Invalid format. Use XdY+Z (e.g., 1d4 + 1d6 + 2)");
+         }
+       });
+       customRollInput.addEventListener("keypress", (e) => {
+@@ -3099,9 +3987,9 @@ window.BB_CHARACTER_SHEET = (() => {
+       });
+     }
+ 
+-    const handleRestDieConsume = (pool) => {
++    const handleRestDieConsume = (pool, titlePrefix, callback) => {
+         if (!char.restDice) char.restDice = { used: 0 };
+-        if (char.restDice.used >= char.level) return false; // No dice left
++        if (char.restDice.used >= char.level) return false;
+ 
+         let restDieSize = 4;
+         if (char.level >= 2) restDieSize = 6;
+@@ -3126,48 +4014,40 @@ window.BB_CHARACTER_SHEET = (() => {
+           poolName = "Mana Points";
+           statName = "Int";
+         } else if (pool === "sp") {
+-          baseMod = Math.max(0, window.BB_STATE.getModifier(char.stats.Dex));
++          baseMod = Math.max(0, window.BB_STATE.getModifier(window.BB_STATE.getComputedStat(char, "Dex")));
+           poolName = "Stamina Points";
+           statName = "Dex";
+         }
+ 
+-        let mod = baseMod;
+-        let hasRestful = false;
+-        if (char.talents && char.talents.includes("Restful")) {
+-          mod += 1;
+-          hasRestful = true;
+-        }
+-
+-        let rollResult = Math.floor(Math.random() * restDieSize) + 1;
+-        let isTroll = char.ancestry === "Troll";
+-        if (isTroll) {
+-          const roll2 = Math.floor(Math.random() * restDieSize) + 1;
+-          rollResult = Math.max(rollResult, roll2);
+-        }
+-        
+-        const totalRestored = Math.max(0, rollResult + mod);
+-
+-        // Apply to pool
+-        char[pool].current = Math.min(char[pool].current + totalRestored, char[pool].total);
+-        char.restDice.used += 1;
++        let hasRestful = char.talents && char.talents.includes("Restful");
++        let extraMod = hasRestful ? 1 : 0;
++        let extraBreakdown = hasRestful ? " + 1 (Restful)" : "";
++        let advMode = char.ancestry === "Troll" ? 1 : 0;
+         
+-        // Log it
+-        let breakdownText = `Roll: [${rollResult}${isTroll ? ' (Advantage)' : ''}] ${baseMod >= 0 ? '+' : '-'} ${Math.abs(baseMod)} (${statName})`;
+-        if (hasRestful) breakdownText += ` + 1 (Restful)`;
++        let label = `${titlePrefix} (${poolName})`;
+         
+-        return { poolName, restDieSize, mod, totalRestored, breakdownText };
++        if (window.BB_DICE && window.BB_DICE.roll) {
++           window.BB_DICE.roll(label, 1, restDieSize, baseMod, advMode, 0, false, "", extraMod, extraBreakdown, false, (totalRestored) => {
++              totalRestored = Math.max(0, totalRestored);
++              char[pool].current = Math.min(char[pool].current + totalRestored, char[pool].total);
++              char.restDice.used += 1;
++              
++              window.BB_STATE.saveCharacter(char);
++              render();
++              if (callback) callback(totalRestored, poolName);
++           });
++           return true;
++        }
++        return false;
+     };
+ 
+     document.querySelectorAll(".short-rest-option").forEach(btn => {
+       btn.addEventListener("click", (e) => {
+         const pool = btn.getAttribute("data-pool");
+-        const res = handleRestDieConsume(pool);
+-        if (res) {
+-          window.BB_STATE.addDiceRoll(`Short Rest (${res.poolName})`, 1, res.restDieSize, res.mod, res.totalRestored, res.breakdownText);
+-          window.BB_STATE.saveCharacter(char);
+-          window.BB_DICE.showToastNotification(`Restored ${res.totalRestored} ${res.poolName}!`);
+-          render(); // Update UI
+-        }
++        handleRestDieConsume(pool, "Short Rest", (totalRestored, poolName) => {
++          // The function saves and renders internally
++          // window.BB_DICE.showToastNotification(`Restored ${totalRestored} ${poolName}!`);
++        });
+       });
+     });
+ 
+@@ -3220,12 +4100,11 @@ window.BB_CHARACTER_SHEET = (() => {
+             if (cb) cb.checked = true;
+           }
+ 
+-          const res = handleRestDieConsume(pool);
+-          if (res) {
+-            window.BB_STATE.addDiceRoll(`Used ${potionName}`, 1, res.restDieSize, res.mod, res.totalRestored, res.breakdownText);
+-            window.BB_STATE.saveCharacter(char);
+-            window.BB_DICE.showToastNotification(`Used ${potionName}, restored ${res.totalRestored} ${res.poolName}!`);
+-            render(); // Update UI
++          const wasConsumed = handleRestDieConsume(pool, `Used ${potionName}`, (totalRestored, poolName) => {
++             // window.BB_DICE.showToastNotification(`Used ${potionName}, restored ${totalRestored} ${poolName}!`);
++          });
++          if (!wasConsumed) {
++            window.BB_DICE.showToastNotification("No Rest Dice remaining!");
+           }
+         }
+       });
+@@ -3234,6 +4113,12 @@ window.BB_CHARACTER_SHEET = (() => {
+     const longRestBtn = document.getElementById("long-rest-btn");
+     if (longRestBtn) {
+       longRestBtn.addEventListener("click", () => {
++        if (char.trackers) {
++          if (char.trackers["retrogradeUsed"]) delete char.trackers["retrogradeUsed"];
++          if (char.trackers["studiousMeditationUsed"]) delete char.trackers["studiousMeditationUsed"];
++          if (char.trackers["archmageFreeUseUsed"]) delete char.trackers["archmageFreeUseUsed"];
++          if (char.trackers["archmageUses"]) delete char.trackers["archmageUses"];
++        }
+         // Fully restore HP, MP, SP
+         char.hp.current = char.hp.total;
+         char.hp.temp = 0;
+@@ -3255,6 +4140,18 @@ window.BB_CHARACTER_SHEET = (() => {
+         char.combatState.reaction = false;
+         char.combatState.movement = false;
+ 
++        // Restore Class Trackers
++        if (char.availableTrackers) {
++          char.trackers = char.trackers || {};
++          char.availableTrackers.forEach(tracker => {
++            if (tracker.type === "number") {
++              char.trackers[tracker.name] = tracker.max;
++            } else if (tracker.type === "checkboxes") {
++              char.trackers[tracker.name] = 0; // 0 uses expended
++            }
++          });
++        }
++
+         window.BB_STATE.saveCharacter(char);
+         window.BB_DICE.showToastNotification(`Long Rest complete. Fully restored resources and Action Economy!`);
+         render();
