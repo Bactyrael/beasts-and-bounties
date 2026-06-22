@@ -1704,8 +1704,8 @@ window.BB_CHARACTER_SHEET = (() => {
             <div class="card col-log glass" style="flex:1; display:flex; flex-direction:row; padding:0; overflow:hidden; margin:0; margin-top:20px; max-height:400px;">
               <div style="flex:1; display:flex; flex-direction:column; padding:15px; overflow:hidden;">
                 <div class="log-header" style="margin-bottom:10px; display:flex; flex-direction:column; gap:8px;">
-                  <div style="display:flex; justify-content:space-between; align-items:center;">
-                    <h3 style="margin:0;">Roll History</h3>
+                  <div style="display:flex; width:100%; justify-content:flex-start;">
+                    <h3 style="margin:0; text-align:left; align-self:flex-start;">Roll History</h3>
                   </div>
                   <div style="display:flex; gap:10px; align-items:center; align-self:flex-end; flex-wrap:wrap; justify-content:flex-end;">
                     <div style="display:flex; align-items:center; gap:4px; font-size:0.75rem;">
