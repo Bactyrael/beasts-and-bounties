@@ -498,6 +498,32 @@ window.BB_CHARACTER_SHEET = (() => {
           </div>
 
           ${renderConditionsFlyout(char)}
+
+          <!-- Inject Add Inspiration Modal -->
+          <div id="add-insp-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:100000; justify-content:center; align-items:center;">
+            <div class="card glass" style="width:300px; padding:20px; border-radius:8px; border:1px solid var(--amber);">
+              <h3 style="margin-top:0; color:var(--amber);">Add Inspiration Die</h3>
+              <div style="margin-bottom:10px;">
+                <label style="font-size:0.8rem; color:var(--text-light);">Size</label>
+                <select id="add-insp-size" class="form-control" style="background:rgba(0,0,0,0.5); color:#fff; border:1px solid rgba(255,255,255,0.2);">
+                  <option value="d4">d4</option>
+                  <option value="d6">d6</option>
+                  <option value="d8">d8</option>
+                  <option value="d10">d10</option>
+                  <option value="d12">d12</option>
+                  <option value="d20">d20</option>
+                </select>
+              </div>
+              <div style="margin-bottom:15px;">
+                <label style="font-size:0.8rem; color:var(--text-light);">Source / Name</label>
+                <input type="text" id="add-insp-source" class="form-control" placeholder="e.g. Inspiring Performer" style="background:rgba(0,0,0,0.5); color:#fff; border:1px solid rgba(255,255,255,0.2);">
+              </div>
+              <div style="display:flex; justify-content:flex-end; gap:10px;">
+                <button id="add-insp-cancel" class="btn btn-secondary btn-sm">Cancel</button>
+                <button id="add-insp-confirm" class="btn btn-primary btn-sm">Add</button>
+              </div>
+            </div>
+          </div>
         </div>
       `;
     } catch (outerErr) {
