@@ -1724,7 +1724,6 @@ window.BB_CHARACTER_SHEET = (() => {
                       <option value="adv_die">Advantage Die</option>
                       <option value="dis_die">Disadvantage Die</option>
                     </select>
-                    <button class="btn btn-secondary btn-xs" id="clear-dice-log-btn">Clear</button>
                   </div>
                 </div>
                 <!-- Custom Roll Box -->
@@ -1732,6 +1731,7 @@ window.BB_CHARACTER_SHEET = (() => {
                   <div style="font-size:0.8rem; color:var(--amber); align-self:center; font-weight:bold; width:85px; margin-right:5px;">CUSTOM ROLL</div>
                   <input type="text" id="sheet-custom-dice" class="form-control" placeholder="e.g. 2d6+4" style="flex:1; background:rgba(0,0,0,0.8); color:#fff; border:1px solid rgba(255,193,7,0.5); padding:4px 8px; font-size:0.85rem;">
                   <button class="btn btn-primary btn-xs" id="sheet-custom-roll-btn" style="padding:4px 12px; font-weight:bold;">Roll</button>
+                  <button class="btn btn-secondary btn-xs" id="clear-dice-log-btn" style="padding:4px 12px;">Clear</button>
                 </div>
                 <div class="roll-log-list" id="sheet-roll-log" style="flex:1; overflow-y:auto; padding-right:5px;">
                   <!-- Rendered Dynamically -->
