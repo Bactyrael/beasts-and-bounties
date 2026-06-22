@@ -120,6 +120,23 @@ window.BB_DICE = (() => {
       }
     }
 
+    let inspDieEl = null;
+    let inspDieType = 0;
+    if (char && char.useInspiration && char.inspirationDie && (char.inspirationCount || 0) > 0) {
+      inspDieType = parseInt(char.inspirationDie.replace("d", ""));
+      if (inspDieType) {
+        inspDieEl = document.createElement("div");
+        inspDieEl.className = `virtual-die d${inspDieType}-die rolling insp-die`;
+        inspDieEl.style.width = "60px";
+        inspDieEl.style.height = "60px";
+        inspDieEl.style.fontSize = "1.5rem";
+        inspDieEl.style.lineHeight = "60px";
+        inspDieEl.style.borderColor = "var(--amber)";
+        inspDieEl.style.color = "var(--amber)";
+        container.appendChild(inspDieEl);
+      }
+    }
+
     // Show overlay
     diceOverlay.classList.add("active");
 
@@ -131,6 +148,9 @@ window.BB_DICE = (() => {
       extraVirtualDice.forEach(el => {
         el.textContent = Math.floor(Math.random() * extraDice.type) + 1;
       });
+      if (inspDieEl) {
+        inspDieEl.textContent = Math.floor(Math.random() * inspDieType) + 1;
+      }
     }, 60);
 
     setTimeout(() => {
@@ -138,22 +158,24 @@ window.BB_DICE = (() => {
 
       virtualDice.forEach(el => el.classList.remove("rolling"));
       extraVirtualDice.forEach(el => el.classList.remove("rolling"));
+      if (inspDieEl) inspDieEl.classList.remove("rolling");
 
       let inspDieResult = 0;
-      if (char && char.useInspiration && char.inspirationDie) {
-        let inspDieType = parseInt(char.inspirationDie.replace("d", ""));
-        if (inspDieType) {
+      if (inspDieEl) {
           inspDieResult = Math.floor(Math.random() * inspDieType) + 1;
+          inspDieEl.textContent = inspDieResult;
           extraModifier += inspDieResult;
           extraBreakdown += (extraBreakdown ? " | " : "") + `Inspiration (${char.inspirationDie}): +${inspDieResult}`;
           
-          char.inspirationDie = "";
           char.useInspiration = false;
+          char.inspirationCount = Math.max(0, (char.inspirationCount || 0) - 1);
+          if (char.inspirationCount === 0) {
+             char.inspirationDie = "";
+          }
           window.BB_STATE.saveCharacter(char);
           if (window.BB_APP && window.BB_APP.renderActiveTab) {
              window.BB_APP.renderActiveTab();
           }
-        }
       }
 
       // Calculate final roll
