@@ -3865,15 +3865,28 @@ window.BB_CHARACTER_SHEET = (() => {
           char.availableTrackers.forEach(t => {
             if (t.shortRestRecover) {
               let amount = 0;
-              if (t.shortRestRecover === "half_up") {
-                amount = Math.ceil(t.max / 2);
-              } else if (t.shortRestRecover === "half_down") {
-                amount = Math.floor(t.max / 2);
-              } else if (t.shortRestRecover === "full") {
-                amount = t.max;
-              } else {
-                amount = parseInt(t.shortRestRecover) || 0;
+              let srrStr = String(t.shortRestRecover).toLowerCase();
+              
+              if (srrStr.includes("level")) {
+                try {
+                  let evalRes = eval(srrStr.replace(/level/g, char.level));
+                  if (!evalRes) return;
+                  srrStr = String(evalRes).toLowerCase();
+                } catch(e) {}
               }
+
+              if (srrStr === "half_up") {
+                amount = Math.ceil(t.max / 2);
+              } else if (srrStr === "half_down") {
+                amount = Math.floor(t.max / 2);
+              } else if (srrStr === "full" || srrStr === "all") {
+                amount = t.max;
+              } else if (srrStr === "one") {
+                amount = 1;
+              } else {
+                amount = parseInt(srrStr) || 0;
+              }
+              
               if (amount > 0) {
                 char.trackers[t.name] = Math.min(t.max, (char.trackers[t.name] || 0) + amount);
               }
