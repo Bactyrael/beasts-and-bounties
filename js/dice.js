@@ -103,6 +103,22 @@ window.BB_DICE = (() => {
       container.appendChild(dieEl);
       virtualDice.push(dieEl);
     }
+    
+    const extraVirtualDice = [];
+    if (extraDice) {
+      for (let i = 0; i < extraDice.count; i++) {
+        const dieEl = document.createElement("div");
+        dieEl.className = `virtual-die d${extraDice.type}-die rolling extra-die`;
+        dieEl.style.width = "60px";
+        dieEl.style.height = "60px";
+        dieEl.style.fontSize = "1.5rem";
+        dieEl.style.lineHeight = "60px";
+        dieEl.style.borderColor = "#a855f7";
+        dieEl.style.color = "#a855f7";
+        container.appendChild(dieEl);
+        extraVirtualDice.push(dieEl);
+      }
+    }
 
     // Show overlay
     diceOverlay.classList.add("active");
@@ -112,12 +128,16 @@ window.BB_DICE = (() => {
       virtualDice.forEach(el => {
         el.textContent = Math.floor(Math.random() * dieType) + 1;
       });
+      extraVirtualDice.forEach(el => {
+        el.textContent = Math.floor(Math.random() * extraDice.type) + 1;
+      });
     }, 60);
 
     setTimeout(() => {
       clearInterval(interval);
 
       virtualDice.forEach(el => el.classList.remove("rolling"));
+      extraVirtualDice.forEach(el => el.classList.remove("rolling"));
 
       let inspDieResult = 0;
       if (char && char.useInspiration && char.inspirationDie) {
@@ -259,6 +279,7 @@ window.BB_DICE = (() => {
            let v = Math.floor(Math.random() * extraDice.type) + 1;
            extraRolls.push(v);
            extraSum += v;
+           if (extraVirtualDice[i]) extraVirtualDice[i].textContent = v;
         }
         rollSum += extraSum;
         breakdownText += ` | + [${extraRolls.join(", ")}] ${extraDice.label || ""}`;
