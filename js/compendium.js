@@ -180,7 +180,7 @@ console.log('Compendium script loaded');
                 <option value="all" ${miscCategoryFilter === 'all' ? 'selected' : ''}>All Items</option>
                 <option value="adventuring gear" ${miscCategoryFilter === 'adventuring gear' ? 'selected' : ''}>Adventuring Gear</option>
                 <option value="consumable" ${miscCategoryFilter === 'consumable' ? 'selected' : ''}>Consumables</option>
-                <option value="tool" ${miscCategoryFilter === 'tool' ? 'selected' : ''}>Tools & Instruments</option>
+                <option value="tool" ${miscCategoryFilter === 'tool' ? 'selected' : ''}>Tools</option>
                 <option value="trade good" ${miscCategoryFilter === 'trade good' ? 'selected' : ''}>Trade Goods</option>
                 <option value="misc" ${miscCategoryFilter === 'misc' ? 'selected' : ''}>Misc</option>
             </select>

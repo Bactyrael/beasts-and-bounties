@@ -8,6 +8,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <!-- FontAwesome for Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
   <!-- Stylesheet -->
   <link rel="stylesheet" href="css/styles.css">
 </head>
@@ -59,8 +61,9 @@
   <script>
     window.addEventListener('error', function(e) {
       var errDiv = document.createElement('div');
-      errDiv.style = 'color:red; z-index:99999; position:fixed; top:50px; left:50px; background:black; padding:20px; border:2px solid red; font-size:24px; max-width:80%; word-wrap:break-word;';
-      errDiv.innerHTML = 'ERROR in ' + e.filename + ' at line ' + e.lineno + ':<br>' + e.message;
+      errDiv.style = 'color:red; z-index:99999; position:fixed; top:50px; left:50px; background:black; padding:20px; border:2px solid red; font-size:24px; max-width:80%; word-wrap:break-word; cursor:pointer;';
+      errDiv.innerHTML = 'ERROR in ' + e.filename + ' at line ' + e.lineno + ':<br>' + e.message + '<br><span style="font-size:14px;color:white;">(Click to dismiss)</span>';
+      errDiv.onclick = function() { errDiv.remove(); };
       document.body.appendChild(errDiv);
     });
   </script>

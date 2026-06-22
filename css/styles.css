@@ -1163,6 +1163,8 @@ select.form-control option {
   border-radius: 0 0 var(--radius-md) var(--radius-md);
   padding: 24px;
   min-height: 500px;
+  max-height: 65vh;
+  overflow-y: auto;
 }
 
 /* Skills Tab Grid */
@@ -2047,6 +2049,14 @@ select.form-control option {
   50% { transform: scale(0.95) rotate(15deg); }
   75% { transform: scale(1.1) rotate(-10deg); }
   100% { transform: scale(1) rotate(0deg); }
+}
+
+.dropped-die {
+  opacity: 0.4;
+  text-decoration: line-through;
+  text-decoration-color: #ff3333;
+  text-decoration-thickness: 3px;
+  filter: grayscale(100%);
 }
 
 .dice-result-label {

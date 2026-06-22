@@ -55,7 +55,12 @@ window.BB_DICE = (() => {
     }
 
     const overlayTitle = document.getElementById("dice-roll-title");
-    const dieElement = document.getElementById("virtual-die-element");
+    let dieElement = document.getElementById("virtual-die-element");
+    if (!dieElement) {
+      const container = document.querySelector(".dice-visual-container");
+      container.innerHTML = '<div class="virtual-die" id="virtual-die-element"></div>';
+      dieElement = document.getElementById("virtual-die-element");
+    }
     const totalElement = document.getElementById("dice-roll-total");
     const breakdownElement = document.getElementById("dice-roll-breakdown");
 
@@ -71,30 +76,48 @@ window.BB_DICE = (() => {
     totalElement.textContent = "Total: --";
     breakdownElement.textContent = "Rolling...";
 
-    // Configure dice shape based on die type
-    dieElement.className = "virtual-die";
-    if (dieType === 20) dieElement.classList.add("d20-die");
-    else if (dieType === 6) dieElement.classList.add("d6-die");
-    else if (dieType === 10) dieElement.classList.add("d10-die");
-    else if (dieType === 8) dieElement.classList.add("d8-die");
-    else if (dieType === 4) dieElement.classList.add("d4-die");
-    else dieElement.classList.add("d20-die"); // fallback
+    // Configure dice visual container
+    const container = document.querySelector(".dice-visual-container");
+    container.innerHTML = "";
+    container.style.display = "flex";
+    container.style.gap = "10px";
+    container.style.flexWrap = "wrap";
+    container.style.justifyContent = "center";
+
+    // Determine how many dice to spawn
+    let spawnCount = dieCount;
+    if (advantageMode === 1 || advantageMode === -1) {
+      spawnCount = dieCount * 2;
+    } else if (advantageMode === 2 || advantageMode === -2) {
+      spawnCount = dieCount + 1;
+    }
+
+    const virtualDice = [];
+    for (let i = 0; i < spawnCount; i++) {
+      const dieEl = document.createElement("div");
+      dieEl.className = `virtual-die d${dieType}-die rolling`;
+      dieEl.style.width = "60px";
+      dieEl.style.height = "60px";
+      dieEl.style.fontSize = "1.5rem";
+      dieEl.style.lineHeight = "60px";
+      container.appendChild(dieEl);
+      virtualDice.push(dieEl);
+    }
 
     // Show overlay
     diceOverlay.classList.add("active");
 
-    // Animation
-    dieElement.classList.add("rolling");
-    
     let iterations = 10;
     let interval = setInterval(() => {
-      // Show random numbers while rolling
-      dieElement.textContent = Math.floor(Math.random() * dieType) + 1;
+      virtualDice.forEach(el => {
+        el.textContent = Math.floor(Math.random() * dieType) + 1;
+      });
     }, 60);
 
     setTimeout(() => {
       clearInterval(interval);
-      dieElement.classList.remove("rolling");
+
+      virtualDice.forEach(el => el.classList.remove("rolling"));
 
       let inspDieResult = 0;
       if (char && char.useInspiration && char.inspirationDie) {
@@ -146,34 +169,71 @@ window.BB_DICE = (() => {
           rollSum += kept;
           if (canCrit && kept >= critThreshold) hasCrit = true;
           displayPairs.push(`[${val1},${val2}->${kept}]`);
+
+          // Update visuals
+          const el1 = virtualDice[i * 2];
+          const el2 = virtualDice[i * 2 + 1];
+          el1.textContent = val1;
+          el2.textContent = val2;
+
+          if (kept === val1 && kept !== val2) {
+            el2.classList.add("dropped-die");
+          } else if (kept === val2 && kept !== val1) {
+            el1.classList.add("dropped-die");
+          } else {
+             // they tied, drop the second one
+             el2.classList.add("dropped-die");
+          }
         }
         breakdownText = `Roll: ${displayPairs.join(" ")} ${modSign} ${absMod}`;
       } else if (advantageMode === 2 || advantageMode === -2) {
         let pool = [];
         for (let i = 0; i < dieCount + 1; i++) {
-          pool.push(rollSingleDie());
+          pool.push({ val: rollSingleDie(), index: i });
         }
-        pool.sort((a, b) => a - b);
-        let dropped = 0;
+        pool.sort((a, b) => a.val - b.val);
+        
+        let droppedIndex = -1;
+        let droppedVal = 0;
         if (advantageMode === 2) {
-          dropped = pool.shift();
+          let dropped = pool.shift();
+          droppedIndex = dropped.index;
+          droppedVal = dropped.val;
         } else {
-          dropped = pool.pop();
+          let dropped = pool.pop();
+          droppedIndex = dropped.index;
+          droppedVal = dropped.val;
         }
         
-        pool.forEach(val => {
-          rolls.push(val);
-          rollSum += val;
-          if (canCrit && val >= critThreshold) hasCrit = true;
+        pool.forEach(item => {
+          rolls.push(item.val);
+          rollSum += item.val;
+          if (canCrit && item.val >= critThreshold) hasCrit = true;
+        });
+
+        // Restore original order for visuals
+        let originalOrder = [];
+        if (advantageMode === 2) {
+          originalOrder = [ {val: droppedVal, index: droppedIndex}, ...pool ].sort((a,b) => a.index - b.index);
+        } else {
+          originalOrder = [ ...pool, {val: droppedVal, index: droppedIndex} ].sort((a,b) => a.index - b.index);
+        }
+
+        originalOrder.forEach((item, i) => {
+          virtualDice[i].textContent = item.val;
+          if (i === droppedIndex) {
+            virtualDice[i].classList.add("dropped-die");
+          }
         });
         
-        breakdownText = `Roll: [${rolls.join(", ")}] (Dropped: ${dropped}) ${modSign} ${absMod}`;
+        breakdownText = `Roll: [${rolls.join(", ")}] (Dropped: ${droppedVal}) ${modSign} ${absMod}`;
       } else {
         for (let i = 0; i < dieCount; i++) {
           let val = rollSingleDie();
           rolls.push(val);
           rollSum += val;
           if (canCrit && val >= critThreshold) hasCrit = true;
+          virtualDice[i].textContent = val;
         }
         breakdownText = `Roll: [${rolls.join(", ")}] ${modSign} ${absMod}`;
       }
@@ -181,8 +241,15 @@ window.BB_DICE = (() => {
       if (hasCrit) {
         criticalBonus = rollSingleDie();
         rollSum += criticalBonus;
-        dieElement.classList.add("crit-pulse");
-        setTimeout(() => dieElement.classList.remove("crit-pulse"), 1000);
+        
+        virtualDice.forEach(el => {
+          if (!el.classList.contains("dropped-die")) {
+            el.classList.add("crit-pulse");
+          }
+        });
+        setTimeout(() => {
+          virtualDice.forEach(el => el.classList.remove("crit-pulse"));
+        }, 1000);
       }
 
       const totalResult = rollSum + modifier + extraModifier;
@@ -246,8 +313,90 @@ window.BB_DICE = (() => {
     }, 4000);
   }
 
+
+  function rollMixed(label, diceList, modifier = 0) {
+    init();
+
+    const overlayTitle = document.getElementById("dice-roll-title");
+    const container = document.querySelector(".dice-visual-container");
+    const totalElement = document.getElementById("dice-roll-total");
+    const breakdownElement = document.getElementById("dice-roll-breakdown");
+
+    overlayTitle.textContent = `Rolling ${label}...`;
+    totalElement.textContent = "Total: --";
+    breakdownElement.textContent = "Rolling...";
+
+    container.innerHTML = "";
+    container.style.display = "flex";
+    container.style.gap = "10px";
+    container.style.flexWrap = "wrap";
+    container.style.justifyContent = "center";
+
+    const virtualDice = [];
+    diceList.forEach(diceDef => {
+      for (let i = 0; i < diceDef.count; i++) {
+        const dieEl = document.createElement("div");
+        dieEl.className = `virtual-die d${diceDef.type}-die rolling`;
+        dieEl.style.width = "40px";
+        dieEl.style.height = "40px";
+        dieEl.style.fontSize = "1rem";
+        dieEl.style.lineHeight = "40px";
+        
+        container.appendChild(dieEl);
+        virtualDice.push({
+          el: dieEl,
+          type: diceDef.type,
+          sign: diceDef.sign
+        });
+      }
+    });
+
+    diceOverlay.classList.add("active");
+
+    let interval = setInterval(() => {
+      virtualDice.forEach(d => {
+        d.el.textContent = Math.floor(Math.random() * d.type) + 1;
+      });
+    }, 60);
+
+    setTimeout(() => {
+      clearInterval(interval);
+      let rollSum = 0;
+      let breakdownParts = [];
+
+      virtualDice.forEach(d => {
+        d.el.classList.remove("rolling");
+        let val = Math.floor(Math.random() * d.type) + 1;
+        d.el.textContent = val;
+        let effectiveVal = val * d.sign;
+        rollSum += effectiveVal;
+        
+        let signStr = d.sign < 0 ? "-" : "+";
+        if (breakdownParts.length === 0 && d.sign > 0) signStr = ""; 
+        breakdownParts.push(`${signStr}[d${d.type}: ${val}]`);
+      });
+
+      const totalResult = rollSum + modifier;
+      
+      const modSign = modifier >= 0 ? "+" : "-";
+      const absMod = Math.abs(modifier);
+      if (modifier !== 0) {
+        breakdownParts.push(`${modSign} ${absMod}`);
+      }
+
+      const breakdownText = `Roll: ${breakdownParts.join(" ")}`;
+
+      totalElement.textContent = `Total: ${totalResult}`;
+      breakdownElement.textContent = breakdownText;
+
+      window.BB_STATE.addDiceRoll(label, virtualDice.length, 0, modifier, totalResult, breakdownText);
+      showToastNotification(`Rolled ${label}: ${totalResult} (${breakdownText})`);
+
+    }, 800);
+  }
   return {
     roll,
+    rollMixed,
     addRollToHistory,
     showToastNotification
   };

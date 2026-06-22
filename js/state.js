@@ -89,7 +89,9 @@ window.BB_STATE = (() => {
         crystal: 1
       }
     },
-    spells: ["battle_cry", "execute"]
+    spells: ["battle_cry", "execute"],
+    imbuedSpells: {},
+    trackers: {}
   };
 
   // State Variables
@@ -124,7 +126,9 @@ window.BB_STATE = (() => {
       shoppingCart: [],
       activeCategory: "Weapons"
     },
-    spells: []
+    spells: [],
+    imbuedSpells: {},
+    trackers: {}
   };
 
   let builderState = { ...defaultBuilderState };
@@ -197,7 +201,24 @@ window.BB_STATE = (() => {
       });
     }
 
-    let totalVal = innateVal + equipBonus;
+    let classBonus = 0;
+    if (char.class === "Berserker" && char.level >= 10) {
+      if (statKey === "Str" || statKey === "Con") classBonus += 4;
+    }
+    if (char.class === "Disciple" && char.level >= 10) {
+      if (statKey === "Dex" || statKey === "Con") classBonus += 4;
+    }
+    if (char.class === "Herald" && char.level >= 10) {
+      if (statKey === "Dex" || statKey === "Lck") classBonus += 4;
+    }
+    if (char.class === "Ranger" && char.level >= 10) {
+      if (statKey === "Str" || statKey === "Dex" || statKey === "Wis") classBonus += 2;
+    }
+    if (char.class === "Occultist" && char.level >= 10) {
+      if (statKey === "Wis" || statKey === "Int" || statKey === "Con") classBonus += 2;
+    }
+
+    let totalVal = innateVal + equipBonus + ancestryBonus + classBonus;
     if (totalVal > 30) totalVal = 30;
     
     if (statKey === "Int" && char.equipment && char.equipment.head === "Starveil") {
@@ -386,6 +407,7 @@ window.BB_STATE = (() => {
     const found = savedCharacters.find(c => c.id === id);
     if (found) {
       activeCharacter = found;
+      try { localStorage.setItem("bb_active_character", id); } catch(e) {}
       publish("active_character_changed", activeCharacter);
     }
   }
@@ -410,7 +432,9 @@ window.BB_STATE = (() => {
   // Initialize
   loadCharacters();
   if (savedCharacters.length > 0) {
-    activeCharacter = savedCharacters[0];
+    let lastActiveId = null;
+    try { lastActiveId = localStorage.getItem("bb_active_character"); } catch(e) {}
+    activeCharacter = savedCharacters.find(c => c.id === lastActiveId) || savedCharacters[0];
   }
 
   return {
@@ -451,7 +475,9 @@ window.BB_STATE = (() => {
           shoppingCart: [],
           activeCategory: "Weapons"
         },
-        spells: []
+        spells: [],
+        imbuedSpells: {},
+        trackers: {}
       };
       try {
         sessionStorage.removeItem("bb_builder_state");

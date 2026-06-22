@@ -19,6 +19,9 @@ window.BB_BUILDER = (() => {
   }
 
   function render() {
+    const tooltip = document.getElementById("hover-tooltip");
+    if (tooltip) tooltip.style.display = "none";
+
     const container = document.getElementById("main-view-container");
     if (!container) return;
 
@@ -745,13 +748,13 @@ window.BB_BUILDER = (() => {
         if (!item.type) return true;
         let iType = item.type.toLowerCase();
         let nameStr = item.name.toLowerCase();
+        let iTraining = item.training ? item.training.toLowerCase() : "";
         
-        if (iType.includes("focus") || nameStr.includes("implement") || nameStr.includes("stave") || nameStr.includes("wand") || nameStr.includes("crosier") || nameStr.includes("scepter")) {
+        if (iType.includes("focus") || iTraining.includes("focus") || nameStr.includes("implement") || nameStr.includes("stave") || nameStr.includes("wand") || nameStr.includes("crosier") || nameStr.includes("scepter")) {
           iType = "focus";
         }
         
-        if (iType === "great") return wString.includes("martial") || wString.includes("great"); 
-        return wString.includes(iType) || wString.includes("all");
+        return wString.includes(iType) || wString.includes("all") || (iTraining && wString.includes(iTraining));
       };
 
       const isTrainedArmor = (item) => {
