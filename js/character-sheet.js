@@ -1708,6 +1708,13 @@ window.BB_CHARACTER_SHEET = (() => {
                     <h3 style="margin:0; text-align:left; align-self:flex-start;">Roll History</h3>
                   </div>
                   <div style="display:flex; gap:10px; align-items:center; align-self:flex-end; flex-wrap:wrap; justify-content:flex-end;">
+                    <select id="advantage-toggle" class="form-control inline-select" style="font-size:0.75rem; padding:2px 4px; height:auto; margin:0; background:rgba(0,0,0,0.8); color:var(--amber); border:1px solid rgba(255,193,7,0.5);">
+                      <option value="normal">Normal Roll</option>
+                      <option value="adv_dice">Advantage Dice</option>
+                      <option value="dis_dice">Disadvantage Dice</option>
+                      <option value="adv_die">Advantage Die</option>
+                      <option value="dis_die">Disadvantage Die</option>
+                    </select>
                     <div style="display:flex; align-items:center; gap:4px; font-size:0.75rem;">
                       <span style="color:var(--text-light);" title="Your Inspiration Dice">Insp:</span>
                       <select id="char-inspiration-die-select" style="background:rgba(0,0,0,0.3); border:1px solid rgba(255,255,255,0.2); color:#fff; padding:2px; border-radius:3px; max-width: 130px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
@@ -1717,13 +1724,6 @@ window.BB_CHARACTER_SHEET = (() => {
                       <button id="del-insp-btn" style="background:rgba(255,0,0,0.2); color:#fff; border:none; padding:2px 6px; border-radius:3px; cursor:pointer;" title="Remove Selected Die"><i class="fas fa-trash"></i></button>
                       <button id="use-insp-btn" style="background:${char.useInspirationId ? 'var(--amber)' : 'rgba(255,255,255,0.1)'}; color:${char.useInspirationId ? '#000' : '#fff'}; border:none; padding:2px 6px; border-radius:3px; cursor:pointer;" title="Apply selected to next roll">Use</button>
                     </div>
-                    <select id="advantage-toggle" class="form-control inline-select" style="font-size:0.75rem; padding:2px 4px; height:auto; margin:0; background:rgba(0,0,0,0.8); color:var(--amber); border:1px solid rgba(255,193,7,0.5);">
-                      <option value="normal">Normal Roll</option>
-                      <option value="adv_dice">Advantage Dice</option>
-                      <option value="dis_dice">Disadvantage Dice</option>
-                      <option value="adv_die">Advantage Die</option>
-                      <option value="dis_die">Disadvantage Die</option>
-                    </select>
                   </div>
                 </div>
                 <!-- Custom Roll Box -->
