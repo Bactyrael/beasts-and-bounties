@@ -3956,7 +3956,26 @@ window.BB_CHARACTER_SHEET = (() => {
               isValid = false;
             }
           } else {
-            const modVal = parseInt(val);
+            const lVal = val.toLowerCase();
+            const char = window.BB_STATE && window.BB_STATE.getActiveCharacter ? window.BB_STATE.getActiveCharacter() : null;
+            let modVal = parseInt(val);
+            
+            if (isNaN(modVal) && char) {
+              const attrMap = {
+                "str": "Str", "strength": "Str",
+                "dex": "Dex", "dexterity": "Dex",
+                "con": "Con", "constitution": "Con",
+                "int": "Int", "intelligence": "Int",
+                "wis": "Wis", "wisdom": "Wis",
+                "cha": "Cha", "charisma": "Cha",
+                "lck": "Lck", "luck": "Lck"
+              };
+              if (attrMap[lVal]) {
+                let statVal = window.BB_STATE.getComputedStat(char, attrMap[lVal]);
+                modVal = window.BB_STATE.getModifier(statVal);
+              }
+            }
+
             if (!isNaN(modVal)) {
               totalMod += modVal * sign;
             } else {
