@@ -123,18 +123,20 @@ window.BB_DICE = (() => {
     let inspDieEl = null;
     let inspDieType = 0;
     if (char && char.useInspiration && char.inspirationDie && (char.inspirationCount || 0) > 0) {
-      inspDieType = parseInt(char.inspirationDie.replace("d", ""));
-      if (inspDieType) {
-        inspDieEl = document.createElement("div");
-        inspDieEl.className = `virtual-die d${inspDieType}-die rolling insp-die`;
-        inspDieEl.style.width = "60px";
-        inspDieEl.style.height = "60px";
-        inspDieEl.style.fontSize = "1.5rem";
-        inspDieEl.style.lineHeight = "60px";
-        inspDieEl.style.borderColor = "var(--amber)";
-        inspDieEl.style.color = "var(--amber)";
-        container.appendChild(inspDieEl);
-      }
+      try {
+        inspDieType = parseInt(String(char.inspirationDie).replace("d", "")) || 0;
+        if (inspDieType > 0) {
+          inspDieEl = document.createElement("div");
+          inspDieEl.className = `virtual-die d${inspDieType}-die rolling insp-die`;
+          inspDieEl.style.width = "60px";
+          inspDieEl.style.height = "60px";
+          inspDieEl.style.fontSize = "1.5rem";
+          inspDieEl.style.lineHeight = "60px";
+          inspDieEl.style.borderColor = "var(--amber)";
+          inspDieEl.style.color = "var(--amber)";
+          container.appendChild(inspDieEl);
+        }
+      } catch (e) { console.error("Error setting up inspDie:", e); }
     }
 
     // Show overlay
@@ -162,10 +164,11 @@ window.BB_DICE = (() => {
 
       let inspDieResult = 0;
       if (inspDieEl) {
+        try {
           inspDieResult = Math.floor(Math.random() * inspDieType) + 1;
           inspDieEl.textContent = inspDieResult;
-          extraModifier += inspDieResult;
-          extraBreakdown += (extraBreakdown ? " | " : "") + `Inspiration (${char.inspirationDie}): +${inspDieResult}`;
+          extraModifier = (extraModifier || 0) + inspDieResult;
+          extraBreakdown = (extraBreakdown ? extraBreakdown + " | " : "") + `Inspiration (${char.inspirationDie}): +${inspDieResult}`;
           
           char.useInspiration = false;
           char.inspirationCount = Math.max(0, (char.inspirationCount || 0) - 1);
@@ -176,6 +179,7 @@ window.BB_DICE = (() => {
           if (window.BB_APP && window.BB_APP.renderActiveTab) {
              window.BB_APP.renderActiveTab();
           }
+        } catch (e) { console.error("Error processing inspDieResult:", e); }
       }
 
       // Calculate final roll
