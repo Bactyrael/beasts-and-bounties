@@ -1604,7 +1604,7 @@ window.BB_CHARACTER_SHEET = (() => {
                         qtyStr = ` <span style="color:#ef4444; font-size:0.75rem; margin-left:4px;">(Ammo: ${totalQty})</span>`;
                       }
 
-                      attacksHtml += `<button class="btn btn-secondary attack-roll-btn" data-slot="${slot}" data-grip="${isImprovised ? '' : (item.grip || '')}" data-label="Damage: ${labelPrefix}${item.name}" data-count="${count}" data-type="${type}" data-mod="${modVal}" data-crit="${finalCritRange}" data-bowmens="${bowmensBonus}" style="display:flex; justify-content:space-between; align-items:center; width:100%; padding:8px 12px; font-family:var(--font-mono); font-size:0.85rem; text-align:left; border:1px solid rgba(255,255,255,0.1); background:rgba(0,0,0,0.3); cursor:pointer;" title="${titleStr}"><span>${labelPrefix}${item.name}${qtyStr} <span style="color:#fff; font-size:0.75rem;">(${displaySlot})</span></span><span style="color:var(--amber); display:flex; align-items:center;">${count}d${type}${modDisplay} ${item.damageType || ""}${statDisplay}${extraDmgLabel}${finesseSelect}</span></button>`;
+                      attacksHtml += `<button class="btn btn-secondary attack-roll-btn" data-slot="${slot}" data-grip="${isImprovised ? '' : (item.grip || '')}" data-label="Damage: ${labelPrefix}${item.name}" data-count="${count}" data-type="${type}" data-mod="${modVal}" data-crit="${finalCritRange}" data-bowmens="${bowmensBonus}" data-ammo="${ammoName || ''}" style="display:flex; justify-content:space-between; align-items:center; width:100%; padding:8px 12px; font-family:var(--font-mono); font-size:0.85rem; text-align:left; border:1px solid rgba(255,255,255,0.1); background:rgba(0,0,0,0.3); cursor:pointer;" title="${titleStr}"><span>${labelPrefix}${item.name}${qtyStr} <span style="color:#fff; font-size:0.75rem;">(${displaySlot})</span></span><span style="color:var(--amber); display:flex; align-items:center;">${count}d${type}${modDisplay} ${item.damageType || ""}${statDisplay}${extraDmgLabel}${finesseSelect}</span></button>`;
                     }
                   }
 
@@ -2473,6 +2473,111 @@ window.BB_CHARACTER_SHEET = (() => {
       });
     });
 
+
+    // Attack roll buttons
+    document.querySelectorAll(".attack-roll-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        let label = btn.getAttribute("data-label");
+        const count = parseInt(btn.getAttribute("data-count"));
+        const type = parseInt(btn.getAttribute("data-type"));
+        let mod = parseInt(btn.getAttribute("data-mod"));
+        const slot = btn.getAttribute("data-slot");
+        const grip = btn.getAttribute("data-grip");
+        const critRange = parseInt(btn.getAttribute("data-crit")) || 0;
+        const bowmens = parseInt(btn.getAttribute("data-bowmens")) || 0;
+        
+        if (bowmens > 0) {
+          mod += bowmens;
+          label += " (+1 Bowmen's Bracers)";
+        }
+        
+        // Auto-consume action economy
+        if (!char.combatState) char.combatState = { action: false, bonusAction: false, reaction: false, movement: false };
+        if (slot === "offHand" && grip === "Dual") {
+          if (char.combatState.bonusAction) {
+            window.BB_DICE.showToastNotification("You lack the Bonus Action economy to perform this attack!");
+            return;
+          }
+          char.combatState.bonusAction = true;
+          const cb = document.querySelector('.action-cb[data-action="bonusAction"]');
+          if (cb) cb.checked = true;
+        } else {
+          if (char.combatState.action) {
+            window.BB_DICE.showToastNotification("You lack the Action economy to perform this attack!");
+            return;
+          }
+          char.combatState.action = true;
+          const cb = document.querySelector('.action-cb[data-action="action"]');
+          if (cb) cb.checked = true;
+        }
+
+        const ammo = btn.getAttribute("data-ammo");
+        if (ammo && !(char.flags && char.flags.trackAmmo === false)) {
+          const idx = char.inventorySlots.findIndex(s => {
+            if (typeof s === "string") return s === ammo;
+            if (s && typeof s === "object") return s.name === ammo;
+            return false;
+          });
+          if (idx > -1) {
+            const invSlot = char.inventorySlots[idx];
+            if (typeof invSlot === "object" && invSlot.quantity > 1) {
+              invSlot.quantity -= 1;
+            } else {
+              char.inventorySlots[idx] = "";
+            }
+          } else {
+            window.BB_DICE.showToastNotification(`No ${ammo} left!`);
+            return;
+          }
+        }
+
+        window.BB_STATE.saveCharacter(char);
+        
+        let advDis = 0;
+        if (grip === "Colossal") {
+          advDis = -2;
+        }
+
+        if (slot === "consumable") {
+          const itemName = label.replace("Damage: ", "").replace("Improvised ", "");
+          const idx = char.inventorySlots.findIndex(s => {
+            if (typeof s === "string") return s === itemName;
+            if (s && typeof s === "object") return s.name === itemName;
+            return false;
+          });
+          if (idx > -1) {
+            const invSlot = char.inventorySlots[idx];
+            if (typeof invSlot === "object" && invSlot.quantity > 1) {
+              invSlot.quantity -= 1;
+            } else {
+              char.inventorySlots[idx] = "";
+            }
+            window.BB_STATE.saveCharacter(char);
+            // Delay rendering so the dice roller can find its elements and start smoothly
+            setTimeout(() => {
+              if (window.BB_APP && window.BB_APP.renderActiveTab) {
+                window.BB_APP.renderActiveTab();
+              }
+            }, 1000);
+          }
+        }
+        
+        window.BB_DICE.roll(label, count, type, mod, advDis, critRange, true, grip); 
+      });
+    });
+
+    // Finesse Override Select listener
+    document.querySelectorAll(".finesse-override-select").forEach(sel => {
+      sel.addEventListener("click", e => e.stopPropagation()); // prevent attack roll
+      sel.addEventListener("change", e => {
+        const slot = e.target.getAttribute("data-slot");
+        if (!char.finesseOverrides) char.finesseOverrides = {};
+        char.finesseOverrides[slot] = e.target.value;
+        window.BB_STATE.saveCharacter(char);
+        window.BB_APP.renderActiveTab();
+      });
+    });
+
     document.querySelectorAll(".btn-berserk").forEach(btn => {
       btn.addEventListener("click", () => {
         char.trackers = char.trackers || {};
@@ -3101,6 +3206,15 @@ window.BB_CHARACTER_SHEET = (() => {
         e.preventDefault();
         e.stopPropagation();
         doInitiativeRoll(true);
+      });
+    }
+
+    const trackAmmoCb = document.getElementById("track-ammo-cb");
+    if (trackAmmoCb) {
+      trackAmmoCb.addEventListener("change", (e) => {
+        if (!char.flags) char.flags = {};
+        char.flags.trackAmmo = e.target.checked;
+        window.BB_STATE.saveCharacter(char);
       });
     }
 
