@@ -3956,6 +3956,35 @@ window.BB_CHARACTER_SHEET = (() => {
         
         let label = `${titlePrefix} (${poolName})`;
         
+        let isProphet = char.class === "Invoker" && char.level >= 10;
+        if (pool === "hp" && isProphet) {
+            let maxVal = restDieSize + baseMod + extraMod;
+            let logEntry = {
+              timestamp: new Date().toISOString(),
+              characterId: char.id,
+              characterName: char.name,
+              rollType: label,
+              total: maxVal,
+              breakdown: `Prophet Maximized [1d${restDieSize}] + ${baseMod}${extraBreakdown}`,
+              isCrit: false,
+              isFail: false
+            };
+            let currentLog = window.BB_STATE.getDiceLog();
+            currentLog.unshift(logEntry);
+            if (currentLog.length > 50) currentLog.pop();
+            window.BB_STATE.publish('dice_log_changed');
+            if (window.BB_DICE && window.BB_DICE.showToastNotification) {
+                window.BB_DICE.showToastNotification(`Prophet: Restored maximum ${maxVal} ${poolName}!`);
+            }
+
+            char[pool].current = Math.min(char[pool].current + maxVal, char[pool].total);
+            char.restDice.used += 1;
+            window.BB_STATE.saveCharacter(char);
+            render();
+            if (callback) callback(maxVal, poolName);
+            return true;
+        }
+        
         if (window.BB_DICE && window.BB_DICE.roll) {
            window.BB_DICE.roll(label, 1, restDieSize, baseMod, advMode, 0, false, "", extraMod, extraBreakdown, false, (totalRestored) => {
               totalRestored = Math.max(0, totalRestored);
