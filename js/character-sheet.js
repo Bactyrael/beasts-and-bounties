@@ -922,35 +922,7 @@ window.BB_CHARACTER_SHEET = (() => {
         const classData = window.BB_DATABASE.CLASSES.find(c => c.name === char.class) || {};
         const isClassSkill = classData.skills && classData.skills.includes(sk.name);
         
-        let attrVal = char.stats[sk.attr];
-        
-        if (char.equipment && window.BB_DATABASE && window.BB_DATABASE.ITEMS) {
-          let equipBonus = 0;
-          Object.values(char.equipment).forEach(itemName => {
-            if (!itemName) return;
-            const item = ((window.BB_DATABASE.ITEMS || []).concat(window.BB_DATABASE.MISC_ITEMS || [])).find(i => i.name === itemName);
-            if (item) {
-              const statNameMap = { "Str": "Strength", "Dex": "Dexterity", "Con": "Constitution", "Int": "Intelligence", "Wis": "Wisdom", "Lck": "Luck" };
-              const fullStat = statNameMap[sk.attr];
-              if (item.description) {
-                const match1 = item.description.match(new RegExp(`\\+([0-9]+) to ${fullStat}`, 'i'));
-                if (match1) equipBonus += parseInt(match1[1]);
-              }
-              if (item.affix) {
-                const match2 = item.affix.match(new RegExp(`Your ${fullStat} score increases by \\+([0-9]+)`, 'i'));
-                if (match2) equipBonus += parseInt(match2[1]);
-              }
-            }
-          });
-          attrVal += equipBonus;
-          
-          if (sk.attr === "Int" && char.equipment.head === "Starveil" && attrVal < 18) attrVal = 18;
-          if (sk.attr === "Wis" && char.equipment.head === "Evergreen" && attrVal < 18) attrVal = 18;
-          if (sk.attr === "Con" && char.equipment.armor === "Heartcord" && attrVal < 18) attrVal = 18;
-          if (sk.attr === "Lck" && char.equipment.hands === "Caspian Clutches" && attrVal < 18) attrVal = 18;
-          if (sk.attr === "Dex" && char.equipment.feet === "Dragon Riders" && attrVal < 18) attrVal = 18;
-          if (sk.attr === "Str" && char.equipment.waist === "String of Ears" && attrVal < 18) attrVal = 18;
-        }
+        let attrVal = window.BB_STATE.getComputedStat(char, sk.attr);
         const attrMod = window.BB_STATE.getModifier(attrVal);
         
         let breakdown = [];
