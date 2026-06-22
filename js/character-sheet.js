@@ -2987,9 +2987,9 @@ window.BB_CHARACTER_SHEET = (() => {
 
     // Initiative roll hook
     const doInitiativeRoll = (useBattleMeditation) => {
-      let effectiveLck = char.stats.Lck;
+      let effectiveLck = (char.stats && char.stats.Lck !== undefined) ? char.stats.Lck : 10;
       if (char.equipment && char.equipment.hands === "Caspian Clutches" && effectiveLck < 18) effectiveLck = 18;
-      let luckMod = window.BB_STATE.getModifier(effectiveLck);
+      let luckMod = window.BB_STATE.getModifier(effectiveLck) || 0;
 
       let extraModifier = 0;
       let extraBreakdown = "";
@@ -3000,7 +3000,7 @@ window.BB_CHARACTER_SHEET = (() => {
       }
 
       // Alacrity Talent Bonus (1d4)
-      if (char.talents && char.talents.includes("Alacrity")) {
+      if (char.talents && Array.isArray(char.talents) && char.talents.includes("Alacrity")) {
         const d4Roll = Math.floor(Math.random() * 4) + 1;
         extraModifier += d4Roll;
         extraBreakdown += `+${d4Roll} (Alacrity) `;
@@ -3065,11 +3065,19 @@ window.BB_CHARACTER_SHEET = (() => {
 
     const btnInit = document.getElementById("btn-roll-initiative");
     if (btnInit) {
-      btnInit.addEventListener("click", () => doInitiativeRoll(false));
+      btnInit.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        doInitiativeRoll(false);
+      });
     }
     const btnBattleMed = document.getElementById("btn-battle-meditation");
     if (btnBattleMed) {
-      btnBattleMed.addEventListener("click", () => doInitiativeRoll(true));
+      btnBattleMed.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        doInitiativeRoll(true);
+      });
     }
 
     // Tab buttons
