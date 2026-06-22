@@ -1551,11 +1551,14 @@ window.BB_CHARACTER_SHEET = (() => {
                       let statDisplay = modStat !== "None" ? ` <span style="font-size:0.7rem; color:#fff; margin-left:4px;">(${modStat})</span>` : "";
 
                       let extraDmgLabel = "";
+                      let extraDiceConfig = null;
                       if (char.class === "Justicar" && char.level >= 5 && item.type !== "Bow" && item.type !== "Throwing") {
                         if (char.level >= 10) {
                           extraDmgLabel = ` <span style="color:#a855f7; font-size:0.8rem; margin-left:4px;" title="Ascendency: +2d8 Magic">+ 2d8 Magic</span>`;
+                          extraDiceConfig = "2,8,Magic";
                         } else {
                           extraDmgLabel = ` <span style="color:#a855f7; font-size:0.8rem; margin-left:4px;" title="Celestial Strikes: +1d8 Magic">+ 1d8 Magic</span>`;
+                          extraDiceConfig = "1,8,Magic";
                         }
                       }
 
@@ -1576,7 +1579,7 @@ window.BB_CHARACTER_SHEET = (() => {
                         qtyStr = ` <span style="color:#ef4444; font-size:0.75rem; margin-left:4px;">(Ammo: ${totalQty})</span>`;
                       }
 
-                      attacksHtml += `<button class="btn btn-secondary attack-roll-btn" data-slot="${slot}" data-grip="${isImprovised ? '' : (item.grip || '')}" data-label="Damage: ${labelPrefix}${item.name}" data-count="${count}" data-type="${type}" data-mod="${modVal}" data-crit="${finalCritRange}" data-bowmens="${bowmensBonus}" data-ammo="${ammoName || ''}" style="display:flex; justify-content:space-between; align-items:center; width:100%; padding:8px 12px; font-family:var(--font-mono); font-size:0.85rem; text-align:left; border:1px solid rgba(255,255,255,0.1); background:rgba(0,0,0,0.3); cursor:pointer;" title="${titleStr}"><span>${labelPrefix}${item.name}${qtyStr} <span style="color:#fff; font-size:0.75rem;">(${displaySlot})</span></span><span style="color:var(--amber); display:flex; align-items:center;">${count}d${type}${modDisplay} ${item.damageType || ""}${statDisplay}${extraDmgLabel}${finesseSelect}</span></button>`;
+                      attacksHtml += `<button class="btn btn-secondary attack-roll-btn" data-slot="${slot}" data-grip="${isImprovised ? '' : (item.grip || '')}" data-label="Damage: ${labelPrefix}${item.name}" data-count="${count}" data-type="${type}" data-mod="${modVal}" data-crit="${finalCritRange}" data-bowmens="${bowmensBonus}" data-ammo="${ammoName || ''}" data-extradice="${extraDiceConfig || ''}" style="display:flex; justify-content:space-between; align-items:center; width:100%; padding:8px 12px; font-family:var(--font-mono); font-size:0.85rem; text-align:left; border:1px solid rgba(255,255,255,0.1); background:rgba(0,0,0,0.3); cursor:pointer;" title="${titleStr}"><span>${labelPrefix}${item.name}${qtyStr} <span style="color:#fff; font-size:0.75rem;">(${displaySlot})</span></span><span style="color:var(--amber); display:flex; align-items:center;">${count}d${type}${modDisplay} ${item.damageType || ""}${statDisplay}${extraDmgLabel}${finesseSelect}</span></button>`;
                     }
                   }
 
@@ -1605,15 +1608,18 @@ window.BB_CHARACTER_SHEET = (() => {
                     if (modToUse < 0) modToUse = 0;
 
                     let extraDmgLabelUnarmed = "";
+                    let extraDiceConfigUnarmed = null;
                     if (char.class === "Justicar" && char.level >= 5) {
                       if (char.level >= 10) {
                         extraDmgLabelUnarmed = ` <span style="color:#a855f7; font-size:0.8rem; margin-left:4px;" title="Ascendency: +2d8 Magic">+ 2d8 Magic</span>`;
+                        extraDiceConfigUnarmed = "2,8,Magic";
                       } else {
                         extraDmgLabelUnarmed = ` <span style="color:#a855f7; font-size:0.8rem; margin-left:4px;" title="Celestial Strikes: +1d8 Magic">+ 1d8 Magic</span>`;
+                        extraDiceConfigUnarmed = "1,8,Magic";
                       }
                     }
 
-                    attacksHtml += `<button class="btn btn-secondary attack-roll-btn" data-slot="unarmed" data-grip="" data-label="Damage: Unarmed Strike" data-count="1" data-type="${diceType}" data-mod="${modToUse}" data-crit="0" data-bowmens="0" style="display:flex; justify-content:space-between; align-items:center; width:100%; padding:8px 12px; font-family:var(--font-mono); font-size:0.85rem; text-align:left; border:1px solid rgba(255,255,255,0.1); background:rgba(0,0,0,0.3); cursor:pointer;" title="Roll ${displayDmg} Bludgeoning ${modToUse >= 0 ? '+'+modToUse : modToUse} (Crit Range: 0)"><span>Unarmed Strike <span style="color:#fff; font-size:0.75rem;">(Body)</span></span><span style="color:var(--amber); display:flex; align-items:center;">${displayDmg} ${modToUse >= 0 ? '+'+modToUse : modToUse} Bludgeoning <span style="font-size:0.7rem; color:#fff; margin-left:4px;">(${statLabel})</span>${extraDmgLabelUnarmed}</span></button>`;
+                    attacksHtml += `<button class="btn btn-secondary attack-roll-btn" data-slot="unarmed" data-grip="" data-label="Damage: Unarmed Strike" data-count="1" data-type="${diceType}" data-mod="${modToUse}" data-crit="0" data-bowmens="0" data-extradice="${extraDiceConfigUnarmed || ''}" style="display:flex; justify-content:space-between; align-items:center; width:100%; padding:8px 12px; font-family:var(--font-mono); font-size:0.85rem; text-align:left; border:1px solid rgba(255,255,255,0.1); background:rgba(0,0,0,0.3); cursor:pointer;" title="Roll ${displayDmg} Bludgeoning ${modToUse >= 0 ? '+'+modToUse : modToUse} (Crit Range: 0)"><span>Unarmed Strike <span style="color:#fff; font-size:0.75rem;">(Body)</span></span><span style="color:var(--amber); display:flex; align-items:center;">${displayDmg} ${modToUse >= 0 ? '+'+modToUse : modToUse} Bludgeoning <span style="font-size:0.7rem; color:#fff; margin-left:4px;">(${statLabel})</span>${extraDmgLabelUnarmed}</span></button>`;
 
                     if (char.class === "Disciple") {
                       attacksHtml += `<button class="btn btn-secondary attack-roll-btn" data-slot="flowing_combo" data-grip="" data-label="Damage: Flowing Combination" data-count="1" data-type="${diceType}" data-mod="${modToUse}" data-crit="0" data-bowmens="0" style="display:flex; justify-content:space-between; align-items:center; width:100%; padding:8px 12px; font-family:var(--font-mono); font-size:0.85rem; text-align:left; border:1px solid rgba(255,255,255,0.1); background:rgba(0,0,0,0.3); cursor:pointer; margin-top:4px;" title="Roll ${displayDmg} Bludgeoning ${modToUse >= 0 ? '+'+modToUse : modToUse} (Crit Range: 0) - Costs a Bonus Action"><span>Flowing Combination <span style="color:#fff; font-size:0.75rem;">(Bonus Action)</span></span><span style="color:var(--amber); display:flex; align-items:center;">${displayDmg} ${modToUse >= 0 ? '+'+modToUse : modToUse} Bludgeoning <span style="font-size:0.7rem; color:#fff; margin-left:4px;">(${statLabel})</span></span></button>`;
@@ -2463,6 +2469,15 @@ window.BB_CHARACTER_SHEET = (() => {
           label += " (+1 Bowmen's Bracers)";
         }
         
+        let extraDice = null;
+        const extraDiceStr = btn.getAttribute("data-extradice");
+        if (extraDiceStr) {
+          const parts = extraDiceStr.split(",");
+          if (parts.length === 3) {
+            extraDice = { count: parseInt(parts[0]), type: parseInt(parts[1]), label: parts[2] };
+          }
+        }
+        
         // Auto-consume action economy
         if (!char.combatState) char.combatState = { action: false, bonusAction: false, reaction: false, movement: false };
         if (slot === "offHand" && grip === "Dual") {
@@ -2534,7 +2549,7 @@ window.BB_CHARACTER_SHEET = (() => {
           }
         }
         
-        window.BB_DICE.roll(label, count, type, mod, advDis, critRange, true, grip); 
+        window.BB_DICE.roll(label, count, type, mod, advDis, critRange, true, grip, 0, "", false, null, extraDice); 
       });
     });
 

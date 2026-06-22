@@ -33,7 +33,7 @@ window.BB_DICE = (() => {
     }
   }
 
-  function roll(label, dieCount, dieType, modifier = 0, advantageMode = 0, critRange = 0, canCrit = true, grip = "", extraModifier = 0, extraBreakdown = "", isPrivate = false, onComplete = null) {
+  function roll(label, dieCount, dieType, modifier = 0, advantageMode = 0, critRange = 0, canCrit = true, grip = "", extraModifier = 0, extraBreakdown = "", isPrivate = false, onComplete = null, extraDice = null) {
     init();
 
     // Read global advantage toggle
@@ -250,6 +250,18 @@ window.BB_DICE = (() => {
         setTimeout(() => {
           virtualDice.forEach(el => el.classList.remove("crit-pulse"));
         }, 1000);
+      }
+
+      if (extraDice) {
+        let extraSum = 0;
+        let extraRolls = [];
+        for (let i = 0; i < extraDice.count; i++) {
+           let v = Math.floor(Math.random() * extraDice.type) + 1;
+           extraRolls.push(v);
+           extraSum += v;
+        }
+        rollSum += extraSum;
+        breakdownText += ` | + [${extraRolls.join(", ")}] ${extraDice.label || ""}`;
       }
 
       const totalResult = rollSum + modifier + extraModifier;
