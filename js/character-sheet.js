@@ -1572,7 +1572,7 @@ window.BB_CHARACTER_SHEET = (() => {
                       let finalCritRange = Math.min(totalCritRange, maxCritCap);
                       
                       let labelPrefix = isImprovised ? "Improvised " : "";
-                      let titleStr = `Roll ${count}d${type} ${modVal >= 0 ? '+'+modVal : modVal} (Crit Range: ${finalCritRange})`;
+                      let titleStr = `Roll ${count}d${type} ${modVal >= 0 ? '+'+modVal : modVal} (Base Crit: ${baseCritRange}, Max: ${maxCritCap})`;
                       
                       let displaySlot = slot === "mainHand" ? "Main Hand" : (slot === "offHand" ? "Off Hand" : slot.charAt(0).toUpperCase() + slot.slice(1));
                       let modDisplay = (modVal !== 0 || modStat !== "None") ? ` ${modVal >= 0 ? '+'+modVal : modVal}` : "";
@@ -1607,7 +1607,7 @@ window.BB_CHARACTER_SHEET = (() => {
                         qtyStr = ` <span style="color:#ef4444; font-size:0.75rem; margin-left:4px;">(Ammo: ${totalQty})</span>`;
                       }
 
-                      attacksHtml += `<button class="btn btn-secondary attack-roll-btn" data-slot="${slot}" data-grip="${isImprovised ? '' : (item.grip || '')}" data-label="Damage: ${labelPrefix}${item.name}" data-count="${count}" data-type="${type}" data-mod="${modVal}" data-crit="${finalCritRange}" data-bowmens="${bowmensBonus}" data-ammo="${ammoName || ''}" data-extradice="${extraDiceConfig || ''}" style="display:flex; justify-content:space-between; align-items:center; width:100%; padding:8px 12px; font-family:var(--font-mono); font-size:0.85rem; text-align:left; border:1px solid rgba(255,255,255,0.1); background:rgba(0,0,0,0.3); cursor:pointer;" title="${titleStr}"><span>${labelPrefix}${item.name}${qtyStr} <span style="color:#fff; font-size:0.75rem;">(${displaySlot})</span></span><span style="color:var(--amber); display:flex; align-items:center;">${count}d${type}${modDisplay} ${item.damageType || ""}${statDisplay}${extraDmgLabel}${finesseSelect}</span></button>`;
+                      attacksHtml += `<button class="btn btn-secondary attack-roll-btn" data-slot="${slot}" data-grip="${isImprovised ? '' : (item.grip || '')}" data-label="Damage: ${labelPrefix}${item.name}" data-count="${count}" data-type="${type}" data-mod="${modVal}" data-base-crit="${baseCritRange}" data-crit-bonus="${critBonus}" data-max-crit="${maxCritCap}" data-bowmens="${bowmensBonus}" data-ammo="${ammoName || ''}" data-extradice="${extraDiceConfig || ''}" style="display:flex; justify-content:space-between; align-items:center; width:100%; padding:8px 12px; font-family:var(--font-mono); font-size:0.85rem; text-align:left; border:1px solid rgba(255,255,255,0.1); background:rgba(0,0,0,0.3); cursor:pointer;" title="${titleStr}"><span>${labelPrefix}${item.name}${qtyStr} <span style="color:#fff; font-size:0.75rem;">(${displaySlot})</span></span><span style="color:var(--amber); display:flex; align-items:center;">${count}d${type}${modDisplay} ${item.damageType || ""}${statDisplay}${extraDmgLabel}${finesseSelect}</span></button>`;
                     }
                   }
 
@@ -1647,10 +1647,10 @@ window.BB_CHARACTER_SHEET = (() => {
                       }
                     }
 
-                    attacksHtml += `<button class="btn btn-secondary attack-roll-btn" data-slot="unarmed" data-grip="" data-label="Damage: Unarmed Strike" data-count="1" data-type="${diceType}" data-mod="${modToUse}" data-crit="0" data-bowmens="0" data-extradice="${extraDiceConfigUnarmed || ''}" style="display:flex; justify-content:space-between; align-items:center; width:100%; padding:8px 12px; font-family:var(--font-mono); font-size:0.85rem; text-align:left; border:1px solid rgba(255,255,255,0.1); background:rgba(0,0,0,0.3); cursor:pointer;" title="Roll ${displayDmg} Bludgeoning ${modToUse >= 0 ? '+'+modToUse : modToUse} (Crit Range: 0)"><span>Unarmed Strike <span style="color:#fff; font-size:0.75rem;">(Body)</span></span><span style="color:var(--amber); display:flex; align-items:center;">${displayDmg} ${modToUse >= 0 ? '+'+modToUse : modToUse} Bludgeoning <span style="font-size:0.7rem; color:#fff; margin-left:4px;">(${statLabel})</span>${extraDmgLabelUnarmed}</span></button>`;
+                    attacksHtml += `<button class="btn btn-secondary attack-roll-btn" data-slot="unarmed" data-grip="" data-label="Damage: Unarmed Strike" data-count="1" data-type="${diceType}" data-mod="${modToUse}" data-base-crit="0" data-crit-bonus="${char.critBonus || 0}" data-max-crit="0" data-bowmens="0" data-extradice="${extraDiceConfigUnarmed || ''}" style="display:flex; justify-content:space-between; align-items:center; width:100%; padding:8px 12px; font-family:var(--font-mono); font-size:0.85rem; text-align:left; border:1px solid rgba(255,255,255,0.1); background:rgba(0,0,0,0.3); cursor:pointer;" title="Roll ${displayDmg} Bludgeoning ${modToUse >= 0 ? '+'+modToUse : modToUse} (Crit Range: 0)"><span>Unarmed Strike <span style="color:#fff; font-size:0.75rem;">(Body)</span></span><span style="color:var(--amber); display:flex; align-items:center;">${displayDmg} ${modToUse >= 0 ? '+'+modToUse : modToUse} Bludgeoning <span style="font-size:0.7rem; color:#fff; margin-left:4px;">(${statLabel})</span>${extraDmgLabelUnarmed}</span></button>`;
 
-                    if (char.class === "Disciple") {
-                      attacksHtml += `<button class="btn btn-secondary attack-roll-btn" data-slot="flowing_combo" data-grip="" data-label="Damage: Flowing Combination" data-count="1" data-type="${diceType}" data-mod="${modToUse}" data-crit="0" data-bowmens="0" style="display:flex; justify-content:space-between; align-items:center; width:100%; padding:8px 12px; font-family:var(--font-mono); font-size:0.85rem; text-align:left; border:1px solid rgba(255,255,255,0.1); background:rgba(0,0,0,0.3); cursor:pointer; margin-top:4px;" title="Roll ${displayDmg} Bludgeoning ${modToUse >= 0 ? '+'+modToUse : modToUse} (Crit Range: 0) - Costs a Bonus Action"><span>Flowing Combination <span style="color:#fff; font-size:0.75rem;">(Bonus Action)</span></span><span style="color:var(--amber); display:flex; align-items:center;">${displayDmg} ${modToUse >= 0 ? '+'+modToUse : modToUse} Bludgeoning <span style="font-size:0.7rem; color:#fff; margin-left:4px;">(${statLabel})</span></span></button>`;
+                    if (char.class === "Disciple" && char.level >= 2) {
+                      attacksHtml += `<button class="btn btn-secondary attack-roll-btn" data-slot="flowing_combo" data-grip="" data-label="Damage: Flowing Combination" data-count="1" data-type="${diceType}" data-mod="${modToUse}" data-base-crit="0" data-crit-bonus="${char.critBonus || 0}" data-max-crit="0" data-bowmens="0" style="display:flex; justify-content:space-between; align-items:center; width:100%; padding:8px 12px; font-family:var(--font-mono); font-size:0.85rem; text-align:left; border:1px solid rgba(255,255,255,0.1); background:rgba(0,0,0,0.3); cursor:pointer; margin-top:4px;" title="Roll ${displayDmg} Bludgeoning ${modToUse >= 0 ? '+'+modToUse : modToUse} (Crit Range: 0) - Costs a Bonus Action"><span>Flowing Combination <span style="color:#fff; font-size:0.75rem;">(Bonus Action)</span></span><span style="color:var(--amber); display:flex; align-items:center;">${displayDmg} ${modToUse >= 0 ? '+'+modToUse : modToUse} Bludgeoning <span style="font-size:0.7rem; color:#fff; margin-left:4px;">(${statLabel})</span></span></button>`;
                     }
                   }
 
@@ -1711,9 +1711,10 @@ window.BB_CHARACTER_SHEET = (() => {
                   </div>
                   <div style="display:flex; gap:10px; align-items:center; align-self:flex-end; flex-wrap:nowrap; justify-content:flex-end; max-width:100%; overflow-x:auto;">
                     <select id="crit-range-toggle" class="form-control inline-select" style="font-size:0.75rem; padding:2px 4px; height:auto; margin:0; background:rgba(0,0,0,0.8); color:var(--amber); border:1px solid rgba(255,193,7,0.5);">
-                      <option value="0">Crit: 20</option>
-                      <option value="1">Crit: 19-20</option>
-                      <option value="2">Crit: 18-20</option>
+                      <option value="0">Crit: +0</option>
+                      <option value="1">Crit: +1</option>
+                      <option value="2">Crit: +2</option>
+                      <option value="3">Crit: +3</option>
                     </select>
                     <select id="advantage-toggle" class="form-control inline-select" style="font-size:0.75rem; padding:2px 4px; height:auto; margin:0; background:rgba(0,0,0,0.8); color:var(--amber); border:1px solid rgba(255,193,7,0.5);">
                       <option value="normal">Normal Roll</option>
@@ -2505,8 +2506,16 @@ window.BB_CHARACTER_SHEET = (() => {
         let mod = parseInt(btn.getAttribute("data-mod"));
         const slot = btn.getAttribute("data-slot");
         const grip = btn.getAttribute("data-grip");
-        const critRange = parseInt(btn.getAttribute("data-crit")) || 0;
+        const baseCrit = parseInt(btn.getAttribute("data-base-crit")) || 0;
+        const charCritBonus = parseInt(btn.getAttribute("data-crit-bonus")) || 0;
+        const maxCritCap = parseInt(btn.getAttribute("data-max-crit")) || 0;
         const bowmens = parseInt(btn.getAttribute("data-bowmens")) || 0;
+        
+        const critToggle = document.getElementById("crit-range-toggle");
+        let dropDownCrit = 0;
+        if (critToggle) dropDownCrit = parseInt(critToggle.value) || 0;
+        
+        let finalCritRange = Math.min(baseCrit + charCritBonus + dropDownCrit, maxCritCap);
         
         if (bowmens > 0) {
           mod += bowmens;
@@ -2593,7 +2602,7 @@ window.BB_CHARACTER_SHEET = (() => {
           }
         }
         
-        window.BB_DICE.roll(label, count, type, mod, advDis, critRange, true, grip, 0, "", false, null, extraDice); 
+        window.BB_DICE.roll(label, count, type, mod, advDis, finalCritRange, true, grip, 0, "", false, null, extraDice); 
       });
     });
 

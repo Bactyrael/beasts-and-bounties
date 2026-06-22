@@ -45,12 +45,6 @@ window.BB_DICE = (() => {
       else if (advToggle.value === "dis_die") advantageMode = -2;
     }
 
-    // Read global crit range toggle
-    const critToggle = document.getElementById("crit-range-toggle");
-    if (critToggle && canCrit && parseInt(critToggle.value) > 0) {
-      critRange = parseInt(critToggle.value);
-    }
-
     // Global Untrained Armor Penalty
     const char = window.BB_STATE.getActiveCharacter && window.BB_STATE.getActiveCharacter();
     if (char && char.hasUntrainedArmor) {
