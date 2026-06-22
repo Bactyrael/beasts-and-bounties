@@ -1428,9 +1428,6 @@ window.BB_CHARACTER_SHEET = (() => {
               <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; border-bottom:1px solid rgba(255,193,7,0.3); padding-bottom:8px;">
                 <h3 class="card-header-sm" style="margin:0; border:none; padding:0; display:flex; align-items:center; gap:10px;">
                   Combat
-                  <label style="font-size:0.7rem; color:var(--text-light); display:flex; align-items:center; gap:4px; font-weight:normal; cursor:pointer;">
-                    <input type="checkbox" id="track-ammo-cb" ${(char.flags && char.flags.trackAmmo === false) ? "" : "checked"}> Track Ammo
-                  </label>
                 </h3>
                 <div style="display:flex; align-items:center;">
                   ${char.class === "Disciple" && char.level >= 5 && char.trackers && char.trackers["Battle Meditation Uses"] > 0 ?
@@ -1438,7 +1435,12 @@ window.BB_CHARACTER_SHEET = (() => {
                   <button class="btn btn-sm info-tooltip-trigger" id="btn-roll-initiative" data-type="ability" data-name="Initiative" data-html="<h4>Initiative</h4><p style='margin:0; font-size:0.85rem; color:#fff;'>When combat begins, each participant determines when they act by rolling Initiative. To do so, roll a d20 and add your Luck modifier to the result. The final number determines the order in which you take your turns during the clash.</p>" style="background:var(--mana-blue); color:white; border:none; font-weight:bold; padding:4px 12px; font-size:0.8rem; cursor:pointer;">Roll Initiative</button>
                 </div>
               </div>
-              <h4 style="margin:15px 0 10px 0; color:var(--amber); font-size:0.9rem; border-bottom:1px solid rgba(255,193,7,0.3); padding-bottom:4px;">Weapon Attacks</h4>
+              <div style="display:flex; justify-content:space-between; align-items:center; margin:15px 0 10px 0; border-bottom:1px solid rgba(255,193,7,0.3); padding-bottom:4px;">
+                <h4 style="margin:0; color:var(--amber); font-size:0.9rem;">Weapon Attacks</h4>
+                <label style="font-size:0.7rem; color:var(--text-light); display:flex; align-items:center; gap:4px; font-weight:normal; cursor:pointer;">
+                  <input type="checkbox" id="track-ammo-cb" ${(char.flags && char.flags.trackAmmo === false) ? "" : "checked"}> Track Ammo
+                </label>
+              </div>
               <div class="attacks-list" style="display:flex; flex-direction:column; gap:8px;">
                 ${(function() {
                   let attacksHtml = "";
