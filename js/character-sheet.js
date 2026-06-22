@@ -2725,6 +2725,23 @@ window.BB_CHARACTER_SHEET = (() => {
         char.combatState.bonusAction = false;
         char.combatState.reaction = false;
         char.combatState.movement = false;
+
+        // Indomitable Spirit Logic
+        const hasIndomitableSpirit = char.ancestralFeats && char.ancestralFeats.includes("Indomitable Spirit");
+        if (hasIndomitableSpirit) {
+          if (!char.inspirationDice) char.inspirationDice = [];
+          const indomDie = char.inspirationDice.find(d => d.source === "Indomitable Spirit");
+          if (!indomDie) {
+            char.inspirationDice.push({ id: 'insp-' + Math.random().toString(36).substr(2, 9), size: "d4", source: "Indomitable Spirit" });
+          } else {
+            const steps = ["d4", "d6", "d8", "d10", "d12", "d20"];
+            let currentStep = steps.indexOf(indomDie.size);
+            if (currentStep !== -1 && currentStep < steps.length - 1) {
+              indomDie.size = steps[currentStep + 1];
+            }
+          }
+        }
+
         window.BB_STATE.saveCharacter(char);
         window.BB_DICE.showToastNotification(`${char.name} took a Long Rest. HP, MP, SP, Death Saves, and Action Economy fully refreshed!`);
         render();
@@ -4024,6 +4041,22 @@ window.BB_CHARACTER_SHEET = (() => {
               }
             }
           });
+        }
+
+        // Indomitable Spirit Logic
+        const hasIndomitableSpirit = char.ancestralFeats && char.ancestralFeats.includes("Indomitable Spirit");
+        if (hasIndomitableSpirit) {
+          if (!char.inspirationDice) char.inspirationDice = [];
+          const indomDie = char.inspirationDice.find(d => d.source === "Indomitable Spirit");
+          if (!indomDie) {
+            char.inspirationDice.push({ id: 'insp-' + Math.random().toString(36).substr(2, 9), size: "d4", source: "Indomitable Spirit" });
+          } else {
+            const steps = ["d4", "d6", "d8", "d10", "d12", "d20"];
+            let currentStep = steps.indexOf(indomDie.size);
+            if (currentStep !== -1 && currentStep < steps.length - 1) {
+              indomDie.size = steps[currentStep + 1];
+            }
+          }
         }
 
         window.BB_STATE.saveCharacter(char);
