@@ -144,15 +144,17 @@ window.BB_DICE = (() => {
 
     let iterations = 10;
     let interval = setInterval(() => {
-      virtualDice.forEach(el => {
-        el.textContent = Math.floor(Math.random() * dieType) + 1;
-      });
-      extraVirtualDice.forEach(el => {
-        el.textContent = Math.floor(Math.random() * extraDice.type) + 1;
-      });
-      if (inspDieEl) {
-        inspDieEl.textContent = Math.floor(Math.random() * inspDieType) + 1;
-      }
+      try {
+        virtualDice.forEach(el => {
+          el.textContent = Math.floor(Math.random() * dieType) + 1;
+        });
+        extraVirtualDice.forEach(el => {
+          el.textContent = Math.floor(Math.random() * extraDice.type) + 1;
+        });
+        if (inspDieEl) {
+          inspDieEl.textContent = Math.floor(Math.random() * inspDieType) + 1;
+        }
+      } catch(e) { console.error("Interval error:", e); }
     }, 60);
 
     setTimeout(() => {
@@ -313,30 +315,188 @@ window.BB_DICE = (() => {
 
       const totalResult = rollSum + modifier + extraModifier;
 
-      // Render results
-      dieElement.textContent = totalResult;
-      totalElement.textContent = `Total: ${totalResult}`;
-      
-      if (hasCrit) {
-        breakdownText += ` | CRIT! (+${criticalBonus})`;
-      }
-      
-      if (extraBreakdown) {
-        breakdownText += ` | ${extraBreakdown}`;
-      }
-      
-      breakdownElement.textContent = breakdownText;
+      try {
+        clearInterval(interval);
 
-      // Save to state history
-      if (!isPrivate) {
-        window.BB_STATE.addDiceRoll(label, dieCount, dieType, modifier + extraModifier, totalResult, breakdownText);
-        showToastNotification(`Rolled ${label}: ${totalResult} (${breakdownText})`);
-      } else {
-        showToastNotification(`[PRIVATE] Rolled ${label}: ${totalResult} (${breakdownText})`);
-      }
+        virtualDice.forEach(el => el.classList.remove("rolling"));
+        extraVirtualDice.forEach(el => el.classList.remove("rolling"));
+        if (inspDieEl) inspDieEl.classList.remove("rolling");
 
-      if (onComplete) onComplete(totalResult);
+        let inspDieResult = 0;
+        if (inspDieEl) {
+          try {
+            inspDieResult = Math.floor(Math.random() * inspDieType) + 1;
+            inspDieEl.textContent = inspDieResult;
+            extraModifier = (extraModifier || 0) + inspDieResult;
+            extraBreakdown = (extraBreakdown ? extraBreakdown + " | " : "") + `Inspiration (${char.inspirationDie}): +${inspDieResult}`;
+            
+            char.useInspiration = false;
+            char.inspirationCount = Math.max(0, (char.inspirationCount || 0) - 1);
+            if (char.inspirationCount === 0) {
+               char.inspirationDie = "";
+            }
+            window.BB_STATE.saveCharacter(char);
+            if (window.BB_APP && window.BB_APP.renderActiveTab) {
+               window.BB_APP.renderActiveTab();
+            }
+          } catch (e) { console.error("Error processing inspDieResult:", e); }
+        }
 
+        // Calculate final roll
+        const rolls = [];
+        let rollSum = 0;
+        let hasCrit = false;
+        let criticalBonus = 0;
+        
+        let critThreshold = dieType - critRange;
+        if (critThreshold < 1) critThreshold = 1;
+        if (dieType <= 1) canCrit = false;
+        
+        let breakdownText = "";
+        
+        const modSign = modifier >= 0 ? "+" : "-";
+        const absMod = Math.abs(modifier);
+
+        const rollSingleDie = () => {
+          let val = Math.floor(Math.random() * dieType) + 1;
+          if (grip === "Double" && (val === 1 || val === 2)) {
+            val = Math.floor(Math.random() * dieType) + 1;
+          }
+          return val;
+        };
+
+        if (advantageMode === 1 || advantageMode === -1) {
+          let displayPairs = [];
+          for (let i = 0; i < dieCount; i++) {
+            let val1 = rollSingleDie();
+            let val2 = rollSingleDie();
+            let kept = advantageMode === 1 ? Math.max(val1, val2) : Math.min(val1, val2);
+            rolls.push(kept);
+            rollSum += kept;
+            if (canCrit && kept >= critThreshold) hasCrit = true;
+            displayPairs.push(`[${val1},${val2}->${kept}]`);
+
+            // Update visuals
+            const el1 = virtualDice[i * 2];
+            const el2 = virtualDice[i * 2 + 1];
+            el1.textContent = val1;
+            el2.textContent = val2;
+
+            if (kept === val1 && kept !== val2) {
+              el2.classList.add("dropped-die");
+            } else if (kept === val2 && kept !== val1) {
+              el1.classList.add("dropped-die");
+            } else {
+               // they tied, drop the second one
+               el2.classList.add("dropped-die");
+            }
+          }
+          breakdownText = `Roll: ${displayPairs.join(" ")} ${modSign} ${absMod}`;
+        } else if (advantageMode === 2 || advantageMode === -2) {
+          let pool = [];
+          for (let i = 0; i < dieCount + 1; i++) {
+            pool.push({ val: rollSingleDie(), index: i });
+          }
+          pool.sort((a, b) => a.val - b.val);
+          
+          let droppedIndex = -1;
+          let droppedVal = 0;
+          if (advantageMode === 2) {
+            let dropped = pool.shift();
+            droppedIndex = dropped.index;
+            droppedVal = dropped.val;
+          } else {
+            let dropped = pool.pop();
+            droppedIndex = dropped.index;
+            droppedVal = dropped.val;
+          }
+          
+          pool.forEach(item => {
+            rolls.push(item.val);
+            rollSum += item.val;
+            if (canCrit && item.val >= critThreshold) hasCrit = true;
+          });
+
+          // Restore original order for visuals
+          let originalOrder = [];
+          if (advantageMode === 2) {
+            originalOrder = [ {val: droppedVal, index: droppedIndex}, ...pool ].sort((a,b) => a.index - b.index);
+          } else {
+            originalOrder = [ ...pool, {val: droppedVal, index: droppedIndex} ].sort((a,b) => a.index - b.index);
+          }
+
+          originalOrder.forEach((item, i) => {
+            virtualDice[i].textContent = item.val;
+            if (i === droppedIndex) {
+              virtualDice[i].classList.add("dropped-die");
+            }
+          });
+          
+          breakdownText = `Roll: [${rolls.join(", ")}] (Dropped: ${droppedVal}) ${modSign} ${absMod}`;
+        } else {
+          for (let i = 0; i < dieCount; i++) {
+            let val = rollSingleDie();
+            rolls.push(val);
+            rollSum += val;
+            if (canCrit && val >= critThreshold) hasCrit = true;
+            virtualDice[i].textContent = val;
+          }
+          breakdownText = `Roll: [${rolls.join(", ")}] ${modSign} ${absMod}`;
+        }
+
+        if (hasCrit) {
+          criticalBonus = rollSingleDie();
+          rollSum += criticalBonus;
+          
+          virtualDice.forEach(el => {
+            if (!el.classList.contains("dropped-die")) {
+              el.classList.add("crit-pulse");
+            }
+          });
+          setTimeout(() => {
+            virtualDice.forEach(el => el.classList.remove("crit-pulse"));
+          }, 1000);
+        }
+
+        if (extraDice) {
+          let extraSum = 0;
+          let extraRolls = [];
+          for (let i = 0; i < extraDice.count; i++) {
+             let v = Math.floor(Math.random() * extraDice.type) + 1;
+             extraRolls.push(v);
+             extraSum += v;
+             if (extraVirtualDice[i]) extraVirtualDice[i].textContent = v;
+          }
+          rollSum += extraSum;
+          breakdownText += ` | + [${extraRolls.join(", ")}] ${extraDice.label || ""}`;
+        }
+
+        const totalResult = rollSum + modifier + extraModifier;
+
+        // Render results
+        dieElement.textContent = totalResult;
+        totalElement.textContent = `Total: ${totalResult}`;
+        
+        if (hasCrit) {
+          breakdownText += ` | CRIT! (+${criticalBonus})`;
+        }
+        
+        if (extraBreakdown) {
+          breakdownText += ` | ${extraBreakdown}`;
+        }
+        
+        breakdownElement.textContent = breakdownText;
+
+        // Save to state history
+        if (!isPrivate) {
+          window.BB_STATE.addDiceRoll(label, dieCount, dieType, modifier + extraModifier, totalResult, breakdownText);
+          showToastNotification(`Rolled ${label}: ${totalResult} (${breakdownText})`);
+        } else {
+          showToastNotification(`[PRIVATE] Rolled ${label}: ${totalResult} (${breakdownText})`);
+        }
+
+        if (onComplete) onComplete(totalResult);
+      } catch(e) { console.error("Cleanup timeout error:", e); }
     }, 800);
   }
 

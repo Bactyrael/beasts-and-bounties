@@ -2779,13 +2779,15 @@ window.BB_CHARACTER_SHEET = (() => {
     const useInspBtn = document.getElementById("use-insp-btn");
     if (useInspBtn) {
       useInspBtn.addEventListener("click", () => {
-        if (!char.inspirationDie || (char.inspirationCount || 0) <= 0) {
-          window.BB_DICE.showToastNotification("You must specify a die size and have at least 1 Inspiration Die to use it.");
-          return;
-        }
-        char.useInspiration = !char.useInspiration;
-        window.BB_STATE.saveCharacter(char);
-        window.BB_APP.renderActiveTab();
+        try {
+          if (!char.inspirationDie || (char.inspirationCount || 0) <= 0) {
+            window.BB_DICE.showToastNotification("You must specify a die size and have at least 1 Inspiration Die to use it.");
+            return;
+          }
+          char.useInspiration = !char.useInspiration;
+          window.BB_STATE.saveCharacter(char);
+          window.BB_APP.renderActiveTab();
+        } catch (e) { console.error("useInspBtn error:", e); }
       });
     }
 
