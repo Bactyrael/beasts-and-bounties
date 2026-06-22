@@ -1710,6 +1710,11 @@ window.BB_CHARACTER_SHEET = (() => {
                     <h3 style="margin:0; text-align:left; align-self:flex-start;">Roll History</h3>
                   </div>
                   <div style="display:flex; gap:10px; align-items:center; align-self:flex-end; flex-wrap:nowrap; justify-content:flex-end; max-width:100%; overflow-x:auto;">
+                    <select id="crit-range-toggle" class="form-control inline-select" style="font-size:0.75rem; padding:2px 4px; height:auto; margin:0; background:rgba(0,0,0,0.8); color:var(--amber); border:1px solid rgba(255,193,7,0.5);">
+                      <option value="0">Crit: 20</option>
+                      <option value="1">Crit: 19-20</option>
+                      <option value="2">Crit: 18-20</option>
+                    </select>
                     <select id="advantage-toggle" class="form-control inline-select" style="font-size:0.75rem; padding:2px 4px; height:auto; margin:0; background:rgba(0,0,0,0.8); color:var(--amber); border:1px solid rgba(255,193,7,0.5);">
                       <option value="normal">Normal Roll</option>
                       <option value="adv_dice">Advantage Dice</option>
