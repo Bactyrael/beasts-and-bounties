@@ -122,9 +122,14 @@ window.BB_DICE = (() => {
 
     let inspDieEl = null;
     let inspDieType = 0;
-    if (char && char.useInspiration && char.inspirationDie && (char.inspirationCount || 0) > 0) {
+    let activeInspDie = null;
+    if (char && char.useInspirationId && char.inspirationDice && char.inspirationDice.length > 0) {
+      activeInspDie = char.inspirationDice.find(d => d.id === char.useInspirationId);
+    }
+
+    if (activeInspDie) {
       try {
-        inspDieType = parseInt(String(char.inspirationDie).replace("d", "")) || 0;
+        inspDieType = parseInt(String(activeInspDie.size).replace("d", "")) || 0;
         if (inspDieType > 0) {
           inspDieEl = document.createElement("div");
           inspDieEl.className = `virtual-die d${inspDieType}-die rolling insp-die`;
@@ -171,13 +176,11 @@ window.BB_DICE = (() => {
             inspDieResult = Math.floor(Math.random() * inspDieType) + 1;
             inspDieEl.textContent = inspDieResult;
             extraModifier = (extraModifier || 0) + inspDieResult;
-            extraBreakdown = (extraBreakdown ? extraBreakdown + " | " : "") + `Inspiration (${char.inspirationDie}): +${inspDieResult}`;
+            extraBreakdown = (extraBreakdown ? extraBreakdown + " | " : "") + `Inspiration (${activeInspDie.source} ${activeInspDie.size}): +${inspDieResult}`;
             
-            char.useInspiration = false;
-            char.inspirationCount = Math.max(0, (char.inspirationCount || 0) - 1);
-            if (char.inspirationCount === 0) {
-               char.inspirationDie = "";
-            }
+            char.useInspirationId = null;
+            // Remove the consumed die from the array
+            char.inspirationDice = char.inspirationDice.filter(d => d.id !== activeInspDie.id);
             window.BB_STATE.saveCharacter(char);
             if (window.BB_APP && window.BB_APP.renderActiveTab) {
                window.BB_APP.renderActiveTab();

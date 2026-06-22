@@ -1681,18 +1681,13 @@ window.BB_CHARACTER_SHEET = (() => {
                   <h3 style="margin:0;">Roll History</h3>
                   <div style="display:flex; gap:10px; align-items:center;">
                     <div style="display:flex; align-items:center; gap:4px; font-size:0.75rem;">
-                      <span style="color:var(--text-light);" title="Number of Inspiration Dice">Insp:</span>
-                      <input type="number" id="insp-die-count" value="${char.inspirationCount || 0}" min="0" style="width:36px; background:rgba(0,0,0,0.3); border:1px solid rgba(255,255,255,0.2); color:#fff; padding:2px; border-radius:3px; text-align:center;">
-                      <select id="char-inspiration-die" style="background:rgba(0,0,0,0.3); border:1px solid rgba(255,255,255,0.2); color:#fff; padding:2px; border-radius:3px; width:45px;">
-                        <option value="" ${!char.inspirationDie ? "selected" : ""}>-</option>
-                        <option value="d4" ${char.inspirationDie === "d4" ? "selected" : ""}>d4</option>
-                        <option value="d6" ${char.inspirationDie === "d6" ? "selected" : ""}>d6</option>
-                        <option value="d8" ${char.inspirationDie === "d8" ? "selected" : ""}>d8</option>
-                        <option value="d10" ${char.inspirationDie === "d10" ? "selected" : ""}>d10</option>
-                        <option value="d12" ${char.inspirationDie === "d12" ? "selected" : ""}>d12</option>
-                        <option value="d20" ${char.inspirationDie === "d20" ? "selected" : ""}>d20</option>
+                      <span style="color:var(--text-light);" title="Your Inspiration Dice">Insp:</span>
+                      <select id="char-inspiration-die-select" style="background:rgba(0,0,0,0.3); border:1px solid rgba(255,255,255,0.2); color:#fff; padding:2px; border-radius:3px; max-width: 130px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                        ${(!char.inspirationDice || char.inspirationDice.length === 0) ? `<option value="">None</option>` : char.inspirationDice.map(d => `<option value="${d.id}" ${char.useInspirationId === d.id ? 'selected' : ''}>${d.size} (${d.source})</option>`).join('')}
                       </select>
-                      <button id="use-insp-btn" style="background:${char.useInspiration ? 'var(--amber)' : 'rgba(255,255,255,0.1)'}; color:${char.useInspiration ? '#000' : '#fff'}; border:none; padding:2px 6px; border-radius:3px; cursor:pointer;" title="Apply to next roll">Use</button>
+                      <button id="add-insp-btn" style="background:rgba(255,255,255,0.1); color:#fff; border:none; padding:2px 6px; border-radius:3px; cursor:pointer;" title="Add Inspiration Die">+</button>
+                      <button id="del-insp-btn" style="background:rgba(255,0,0,0.2); color:#fff; border:none; padding:2px 6px; border-radius:3px; cursor:pointer;" title="Remove Selected Die"><i class="fas fa-trash"></i></button>
+                      <button id="use-insp-btn" style="background:${char.useInspirationId ? 'var(--amber)' : 'rgba(255,255,255,0.1)'}; color:${char.useInspirationId ? '#000' : '#fff'}; border:none; padding:2px 6px; border-radius:3px; cursor:pointer;" title="Apply selected to next roll">Use</button>
                     </div>
                     <select id="advantage-toggle" class="form-control inline-select" style="font-size:0.75rem; padding:2px 4px; height:auto; margin:0; background:rgba(0,0,0,0.8); color:var(--amber); border:1px solid rgba(255,193,7,0.5);">
                       <option value="normal">Normal Roll</option>
@@ -2760,34 +2755,93 @@ window.BB_CHARACTER_SHEET = (() => {
       });
     }
 
-    const inspDieCountInput = document.getElementById("insp-die-count");
-    if (inspDieCountInput) {
-      inspDieCountInput.addEventListener("change", (e) => {
-        char.inspirationCount = parseInt(e.target.value) || 0;
-        window.BB_STATE.saveCharacter(char);
-      });
-    }
-
-    const inspirationDieInput = document.getElementById("char-inspiration-die");
-    if (inspirationDieInput) {
-      inspirationDieInput.addEventListener("change", (e) => {
-        char.inspirationDie = e.target.value;
-        window.BB_STATE.saveCharacter(char);
-      });
-    }
-
+    // Inspiration Dice Listeners
+    const addInspBtn = document.getElementById("add-insp-btn");
+    const delInspBtn = document.getElementById("del-insp-btn");
     const useInspBtn = document.getElementById("use-insp-btn");
-    if (useInspBtn) {
+    const inspSelect = document.getElementById("char-inspiration-die-select");
+    const addInspModal = document.getElementById("add-insp-modal");
+    const addInspCancel = document.getElementById("add-insp-cancel");
+    const addInspConfirm = document.getElementById("add-insp-confirm");
+    const addInspSize = document.getElementById("add-insp-size");
+    const addInspSource = document.getElementById("add-insp-source");
+
+    if (inspSelect) {
+      inspSelect.addEventListener("change", (e) => {
+        // If they change the selection, turn off 'use' so it doesn't accidentally trigger with wrong die
+        if (char.useInspirationId) {
+          char.useInspirationId = null;
+          window.BB_STATE.saveCharacter(char);
+          render();
+        }
+      });
+    }
+
+    if (useInspBtn && inspSelect) {
       useInspBtn.addEventListener("click", () => {
-        try {
-          if (!char.inspirationDie || (char.inspirationCount || 0) <= 0) {
-            window.BB_DICE.showToastNotification("You must specify a die size and have at least 1 Inspiration Die to use it.");
+        const selectedId = inspSelect.value;
+        if (!selectedId) return;
+        
+        if (char.useInspirationId === selectedId) {
+          char.useInspirationId = null; // Toggle off
+        } else {
+          char.useInspirationId = selectedId; // Toggle on
+        }
+        window.BB_STATE.saveCharacter(char);
+        render();
+      });
+    }
+
+    if (delInspBtn && inspSelect) {
+      delInspBtn.addEventListener("click", () => {
+        const selectedId = inspSelect.value;
+        if (!selectedId) return;
+        
+        if (!char.inspirationDice) char.inspirationDice = [];
+        char.inspirationDice = char.inspirationDice.filter(d => d.id !== selectedId);
+        if (char.useInspirationId === selectedId) char.useInspirationId = null;
+        
+        window.BB_STATE.saveCharacter(char);
+        render();
+      });
+    }
+
+    if (addInspBtn) {
+      addInspBtn.addEventListener("click", () => {
+        addInspSize.value = "d6";
+        addInspSource.value = "General";
+        addInspModal.style.display = "flex";
+      });
+    }
+
+    if (addInspCancel) {
+      addInspCancel.addEventListener("click", () => {
+        addInspModal.style.display = "none";
+      });
+    }
+
+    if (addInspConfirm) {
+      addInspConfirm.addEventListener("click", () => {
+        const size = addInspSize.value;
+        let source = addInspSource.value.trim() || "General";
+        
+        // Enforce Inspiring Performer Rule
+        if (source.toLowerCase() === "inspiring performer") {
+          source = "Inspiring Performer"; // Normalize capitalization
+          const hasIP = (char.inspirationDice || []).find(d => d.source === "Inspiring Performer");
+          if (hasIP) {
+            window.BB_DICE.showToastNotification("You can only have one Inspiration Die from Inspiring Performer at a time.");
             return;
           }
-          char.useInspiration = !char.useInspiration;
-          window.BB_STATE.saveCharacter(char);
-          window.BB_APP.renderActiveTab();
-        } catch (e) { console.error("useInspBtn error:", e); }
+        }
+
+        if (!char.inspirationDice) char.inspirationDice = [];
+        const uuid = 'insp-' + Math.random().toString(36).substr(2, 9);
+        char.inspirationDice.push({ id: uuid, size, source });
+        
+        addInspModal.style.display = "none";
+        window.BB_STATE.saveCharacter(char);
+        render();
       });
     }
 
