@@ -3946,7 +3946,27 @@ window.BB_CHARACTER_SHEET = (() => {
           const sign = term.startsWith('-') ? -1 : 1;
           const val = term.replace(/[+-]/, '');
 
-          if (val.includes('d') || val.includes('D')) {
+          const lVal = val.toLowerCase();
+          const attrMap = {
+            "str": "Str", "strength": "Str",
+            "dex": "Dex", "dexterity": "Dex",
+            "con": "Con", "constitution": "Con",
+            "int": "Int", "intelligence": "Int",
+            "wis": "Wis", "wisdom": "Wis",
+            "cha": "Cha", "charisma": "Cha",
+            "lck": "Lck", "luck": "Lck"
+          };
+
+          if (attrMap[lVal]) {
+            const char = window.BB_STATE && window.BB_STATE.getActiveCharacter ? window.BB_STATE.getActiveCharacter() : null;
+            if (char) {
+              let statVal = window.BB_STATE.getComputedStat(char, attrMap[lVal]);
+              let modVal = window.BB_STATE.getModifier(statVal);
+              totalMod += modVal * sign;
+            } else {
+              isValid = false;
+            }
+          } else if (val.includes('d') || val.includes('D')) {
             const parts = val.toLowerCase().split('d');
             const count = parts[0] === "" ? 1 : parseInt(parts[0]);
             const type = parseInt(parts[1]);
@@ -3956,26 +3976,7 @@ window.BB_CHARACTER_SHEET = (() => {
               isValid = false;
             }
           } else {
-            const lVal = val.toLowerCase();
-            const char = window.BB_STATE && window.BB_STATE.getActiveCharacter ? window.BB_STATE.getActiveCharacter() : null;
-            let modVal = parseInt(val);
-            
-            if (isNaN(modVal) && char) {
-              const attrMap = {
-                "str": "Str", "strength": "Str",
-                "dex": "Dex", "dexterity": "Dex",
-                "con": "Con", "constitution": "Con",
-                "int": "Int", "intelligence": "Int",
-                "wis": "Wis", "wisdom": "Wis",
-                "cha": "Cha", "charisma": "Cha",
-                "lck": "Lck", "luck": "Lck"
-              };
-              if (attrMap[lVal]) {
-                let statVal = window.BB_STATE.getComputedStat(char, attrMap[lVal]);
-                modVal = window.BB_STATE.getModifier(statVal);
-              }
-            }
-
+            const modVal = parseInt(val);
             if (!isNaN(modVal)) {
               totalMod += modVal * sign;
             } else {
