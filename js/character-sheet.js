@@ -491,7 +491,7 @@ window.BB_CHARACTER_SHEET = (() => {
                 <button class="sheet-tab-btn ${activeTab === "notes" ? "active" : ""}" data-tab="notes">Notes</button>
               </div>
 
-              <div class="tab-content-container" style="flex: 1; display: flex; flex-direction: column; padding: 15px;">
+              <div class="tab-content-container" style="flex: 1; display: flex; flex-direction: column; padding: 15px; height: 100%;">
                 ${tabContentHtml}
               </div>
             </div>
@@ -1168,7 +1168,7 @@ window.BB_CHARACTER_SHEET = (() => {
       let armorTrainingList = Array.from(armorTrainingSet).join(", ") || "None";
       let weaponTrainingList = Array.from(weaponTrainingSet).join(", ") || "None";
       return `
-        <div class="equipment-tab-view glass" style="flex: 1; overflow-y:auto; position:relative; display:flex; flex-direction:column; padding:15px;">
+        <div class="equipment-tab-view glass" style="flex: 1; min-height:100%; overflow-y:auto; position:relative; display:flex; flex-direction:column; padding:15px;">
           <div class="equipment-grid">
             
             <!-- Left Grid: Equipment Slots -->
@@ -1293,7 +1293,7 @@ window.BB_CHARACTER_SHEET = (() => {
     else if (activeTab === "combat") {
       let attacksHtml = ""; // Pre-declare if needed inside, but it's an IIFE right now
       return `
-        <div style="display:flex; justify-content:center; align-items:flex-start; flex:1; overflow-y:auto;">
+        <div style="display:flex; justify-content:center; align-items:stretch; flex:1; overflow-y:auto; height:100%;">
           <div style="flex:1; max-width:600px; display:flex; flex-direction:column; gap:20px; padding-bottom:20px;">
             ${(function(){return `<div style="display:flex; flex-direction:column;">${''}`})()} <!-- dummy just to isolate context if needed -->
 
@@ -1703,7 +1703,7 @@ window.BB_CHARACTER_SHEET = (() => {
             </div>
 
             <!-- Dice Roller History -->
-            <div class="card col-log glass" style="flex:1; display:flex; flex-direction:row; padding:0; overflow:hidden; margin:0; margin-top:20px; max-height:400px;">
+            <div class="card col-log glass" style="flex:1; display:flex; flex-direction:row; padding:0; overflow:hidden; margin:0; margin-top:20px; min-height:250px;">
               <div style="flex:1; display:flex; flex-direction:column; padding:15px; overflow:hidden;">
                 <div class="log-header" style="margin-bottom:10px; display:flex; flex-direction:column; gap:8px;">
                   <div style="display:flex; width:100%; justify-content:flex-start;">
@@ -1865,7 +1865,7 @@ window.BB_CHARACTER_SHEET = (() => {
           }
 
           imbueSectionHTML += `
-            <div class="spell-attune-panel glass" style="margin-top:15px; border-color:var(--mana-blue);">
+            <div class="spell-attune-panel glass" style="min-height: 100%; margin-top:15px; border-color:var(--mana-blue);">
               <h4 style="margin-bottom: 8px; color: var(--mana-blue);">${item.name} (Item-Granted)</h4>
               <p style="font-size:0.8rem; margin-bottom:8px; color:var(--text-muted);">${item.techniqueDesc}</p>
               ${currentImbuedId ?
@@ -1889,7 +1889,7 @@ window.BB_CHARACTER_SHEET = (() => {
         <div style="display:flex; justify-content:center; flex:1; overflow:hidden;">
           <div style="flex:1; max-width:800px; display:flex; flex-direction:column;">
         <div class="spells-tab-view" style="flex:1; overflow-y:auto; padding-right:10px;">
-          <div class="spell-attune-panel glass">
+          <div class="spell-attune-panel glass" style="min-height: 100%; min-height: 100%;">
             <h4 style="margin-bottom: 12px; color: var(--amber);">Attunement Slots: ${char.attunement.used} / ${char.attunement.total}</h4>
             <label for="spell-attune-selector">Attune New Spell or Ability:</label>
             <div class="attune-controls">
@@ -2131,7 +2131,7 @@ window.BB_CHARACTER_SHEET = (() => {
       }
 
       return `
-        <div class="background-tab-view" style="flex:1; overflow-y:auto; padding-right:25px; position:relative;">
+        <div class="background-tab-view" style="flex:1; display:flex; flex-direction:column; overflow-y:auto; padding-right:25px; position:relative;">
           <button id="btn-edit-background" class="btn btn-secondary" style="position:absolute; top:15px; right:25px; border:1px solid var(--amber); background:rgba(0,0,0,0.8); color:var(--text-light); padding:3px 8px; border-radius:4px; cursor:pointer; font-size:0.9rem; z-index:10;">
             ${isEditing ? 'Save' : 'Edit'}
           </button>
@@ -2186,7 +2186,7 @@ window.BB_CHARACTER_SHEET = (() => {
       return `
         <div class="notes-tab-view" style="flex:1; display:flex; flex-direction:column;">
           <h2 style="margin-top:0; color:var(--amber); border-bottom:1px solid rgba(255,193,7,0.3); padding-bottom:5px;">Character Notes</h2>
-          <textarea class="char-notes-input" style="flex:1; width:100%; min-height:400px; background:rgba(0,0,0,0.4); border:1px solid rgba(255,255,255,0.2); border-radius:4px; color:var(--text-light); padding:15px; font-family:inherit; font-size:1rem; resize:vertical;">${char.notes || ""}</textarea>
+          <textarea class="char-notes-input" style="flex:1; width:100%; min-height:100%; background:rgba(0,0,0,0.4); border:1px solid rgba(255,255,255,0.2); border-radius:4px; color:var(--text-light); padding:15px; font-family:inherit; font-size:1rem; resize:vertical;">${char.notes || ""}</textarea>
         </div>
       `;
     }
