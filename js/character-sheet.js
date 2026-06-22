@@ -2706,48 +2706,7 @@ window.BB_CHARACTER_SHEET = (() => {
     });
 
 
-      // Long Rest fully heals HP, MP, SP and resets saves/temp HP
-      const btnLongRest = document.getElementById("btn-long-rest");
-      if (btnLongRest) {
-        btnLongRest.addEventListener("click", () => {
-          char.hp.current = char.hp.total;
-          char.hp.temp = 0;
-          char.mp.current = char.mp.total;
-          if (!char.mp.temp) char.mp.temp = 0;
-          char.mp.temp = 0;
-          char.sp.current = char.sp.total;
-        if (!char.sp.temp) char.sp.temp = 0;
-        char.sp.temp = 0;
-        char.deathSaves.successes = 0;
-        char.deathSaves.failures = 0;
-        if (!char.combatState) char.combatState = {};
-        char.combatState.action = false;
-        char.combatState.bonusAction = false;
-        char.combatState.reaction = false;
-        char.combatState.movement = false;
-
-        // Indomitable Spirit Logic
-        const raceData = window.BB_DATABASE.SPECIES.find(r => r.name === char.race);
-        const hasIndomitableSpirit = raceData && raceData.ancestralFeat && raceData.ancestralFeat.name === "Indomitable Spirit";
-        if (hasIndomitableSpirit) {
-          if (!char.inspirationDice) char.inspirationDice = [];
-          const indomDie = char.inspirationDice.find(d => d.source === "Indomitable Spirit");
-          if (!indomDie) {
-            char.inspirationDice.push({ id: 'insp-' + Math.random().toString(36).substr(2, 9), size: "d4", source: "Indomitable Spirit" });
-          } else {
-            const steps = ["d4", "d6", "d8", "d10", "d12", "d20"];
-            let currentStep = steps.indexOf(indomDie.size);
-            if (currentStep !== -1 && currentStep < steps.length - 1) {
-              indomDie.size = steps[currentStep + 1];
-            }
-          }
-        }
-
-        window.BB_STATE.saveCharacter(char);
-        window.BB_DICE.showToastNotification(`${char.name} took a Long Rest. HP, MP, SP, Death Saves, and Action Economy fully refreshed!`);
-        render();
-      });
-    }
+      // Dead btn-long-rest code removed
 
 
 
@@ -4276,6 +4235,23 @@ window.BB_CHARACTER_SHEET = (() => {
               char.trackers[tracker.name] = 0; // 0 uses expended
             }
           });
+        }
+
+        // Indomitable Spirit Logic
+        const raceData = window.BB_DATABASE.SPECIES.find(r => r.name === char.race);
+        const hasIndomitableSpirit = raceData && raceData.ancestralFeat && raceData.ancestralFeat.name === "Indomitable Spirit";
+        if (hasIndomitableSpirit) {
+          if (!char.inspirationDice) char.inspirationDice = [];
+          const indomDie = char.inspirationDice.find(d => d.source === "Indomitable Spirit");
+          if (!indomDie) {
+            char.inspirationDice.push({ id: 'insp-' + Math.random().toString(36).substr(2, 9), size: "d4", source: "Indomitable Spirit" });
+          } else {
+            const steps = ["d4", "d6", "d8", "d10", "d12", "d20"];
+            let currentStep = steps.indexOf(indomDie.size);
+            if (currentStep !== -1 && currentStep < steps.length - 1) {
+              indomDie.size = steps[currentStep + 1];
+            }
+          }
         }
 
         window.BB_STATE.saveCharacter(char);
