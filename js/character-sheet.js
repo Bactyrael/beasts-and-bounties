@@ -1537,7 +1537,7 @@ window.BB_CHARACTER_SHEET = (() => {
                   for (const [slot, itemName] of Object.entries(char.equipment || {})) {
                     if (!itemName) continue;
 
-                    const item = ((window.BB_DATABASE.ITEMS || []).concat(window.BB_DATABASE.MISC_ITEMS || [])).find(i => i.name === itemName);
+                    let item = ((window.BB_DATABASE.ITEMS || []).concat(window.BB_DATABASE.MISC_ITEMS || [])).find(i => i.name === itemName);
 
                     if (slot === 'offHand' && char.equipment.mainHand) {
                         const mainHandItem = ((window.BB_DATABASE.ITEMS || []).concat(window.BB_DATABASE.MISC_ITEMS || [])).find(i => i.name === char.equipment.mainHand);
