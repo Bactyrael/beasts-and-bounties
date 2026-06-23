@@ -1402,7 +1402,25 @@ window.BB_CHARACTER_SHEET = (() => {
                         headerExtras += `<button class="btn btn-xs btn-danger btn-exhilaration" style="padding:2px 8px; font-size:0.75rem; display:flex; align-items:center; gap:5px; background:#8a0303; border:none; color:#ffffff; ${exStyle}" title="As a bonus action, regain HP equal to Exhilaration Die + Vanguard level." ${exDisabled}>🫀 Exhilaration</button>`;
                     }
                     headerExtras += `</div>`;
-                    if (headerExtras === `<div style="display:flex; gap:5px;"></div>`) headerExtras = "";
+
+                    let numStances = char.level >= 8 ? 2 : 1;
+                    char.stances = char.stances || [];
+                    let stanceHtml = `<div style="display:flex; gap:5px; margin-top:5px; align-items:center;">
+                        <span style="font-size:0.75rem; color:var(--amber);">Stances:</span>`;
+                    for (let i = 0; i < numStances; i++) {
+                        let selected = char.stances[i] || "";
+                        stanceHtml += `<select class="vanguard-stance-select" data-index="${i}" style="font-size:0.7rem; padding:2px; background:rgba(0,0,0,0.5); color:#fff; border:1px solid var(--amber); border-radius:3px; outline:none;">
+                            <option value="" ${selected===""?"selected":""}>None</option>
+                            <option value="Mighty Stance" ${selected==="Mighty Stance"?"selected":""}>Mighty Stance</option>
+                            <option value="Furious Stance" ${selected==="Furious Stance"?"selected":""}>Furious Stance</option>
+                            <option value="Defensive Stance" ${selected==="Defensive Stance"?"selected":""}>Defensive Stance</option>
+                            <option value="Giant Stance" ${selected==="Giant Stance"?"selected":""}>Giant Stance</option>
+                        </select>`;
+                    }
+                    stanceHtml += `</div>`;
+                    headerExtras += stanceHtml;
+
+                    if (headerExtras === `<div style="display:flex; gap:5px;"></div>` + stanceHtml) headerExtras = "";
                 }
 
                 const hasTrackers = char.availableTrackers && char.availableTrackers.length > 0;
