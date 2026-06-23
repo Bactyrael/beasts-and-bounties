@@ -1347,7 +1347,7 @@ window.BB_CHARACTER_SHEET = (() => {
       let attacksHtml = ""; // Pre-declare if needed inside, but it's an IIFE right now
       return `
         <div style="display:flex; justify-content:center; align-items:stretch; flex:1; overflow-y:auto; height:100%;">
-          <div style="flex:1; max-width:600px; display:flex; flex-direction:column; gap:20px; padding-bottom:20px;">
+          <div style="flex:1; max-width:600px; display:flex; flex-direction:column; gap:20px; padding-bottom:20px; min-height:0;">
             ${(function(){return `<div style="display:flex; flex-direction:column;">${''}`})()} <!-- dummy just to isolate context if needed -->
 
             <!-- Class Resources Tracker Card -->
@@ -1757,7 +1757,7 @@ window.BB_CHARACTER_SHEET = (() => {
 
             <!-- Dice Roller History -->
             <div class="card col-log glass" style="flex:1; display:flex; flex-direction:row; padding:0; overflow:hidden; margin:0; margin-top:20px; min-height:250px;">
-              <div style="flex:1; display:flex; flex-direction:column; padding:15px; overflow:hidden;">
+              <div style="flex:1; display:flex; flex-direction:column; padding:15px; overflow:hidden; min-height:0;">
                 <div class="log-header" style="margin-bottom:10px; display:flex; flex-direction:column; gap:8px;">
                   <div style="display:flex; width:100%; justify-content:flex-start;">
                     <h3 style="margin:0; text-align:left; align-self:flex-start;">Roll History</h3>
