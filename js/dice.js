@@ -214,10 +214,13 @@ window.BB_DICE = (() => {
         const modSign = modifier >= 0 ? "+" : "-";
         const absMod = Math.abs(modifier);
 
+        let rerollMessages = [];
         const rollSingleDie = () => {
           let val = Math.floor(Math.random() * dieType) + 1;
-          while (grip === "Double" && (val === 1 || val === 2)) {
-            val = Math.floor(Math.random() * dieType) + 1;
+          if (grip === "Double" && (val === 1 || val === 2)) {
+            let newVal = Math.floor(Math.random() * dieType) + 1;
+            rerollMessages.push(`${val}→${newVal}`);
+            val = newVal;
           }
           return val;
         };
@@ -313,6 +316,10 @@ window.BB_DICE = (() => {
           setTimeout(() => {
             virtualDice.forEach(el => el.classList.remove("crit-pulse"));
           }, 1000);
+        }
+        
+        if (rerollMessages.length > 0) {
+          breakdownText += ` [Rerolled: ${rerollMessages.join(", ")}]`;
         }
 
         if (extraDice) {
