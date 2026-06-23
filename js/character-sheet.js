@@ -1820,14 +1820,19 @@ window.BB_CHARACTER_SHEET = (() => {
           }
           const tagBadge = spell.tag ? `<span class="card-tag tag-badge" style="background: var(--arcane-purple, #9b59b6);">${spell.tag}</span>` : '';
           const actionTypeBadge = spell.actionType ? `<div class="card-tag" style="background: ${spell.actionType === 'Spell' ? 'var(--mana-blue)' : 'var(--stamina-gold)'};">${spell.actionType.toUpperCase()}</div>` : '';
-          const tooltipHtml = window.BB_COMPENDIUM && window.BB_COMPENDIUM.generateDetailHTML ? window.BB_COMPENDIUM.generateDetailHTML({ ...spell, category: 'spell' }).replace(/"/g, '&quot;') : '';
+          let dynamicDesc = spell.description || "";
+          if (spell.id === "abyssal_blast" && char.level) {
+            let diceCount = Math.max(1, Math.floor(char.level / 2));
+            dynamicDesc = dynamicDesc.replace("1d10", `${diceCount}d10`);
+          }
+          const tooltipHtml = window.BB_COMPENDIUM && window.BB_COMPENDIUM.generateDetailHTML ? window.BB_COMPENDIUM.generateDetailHTML({ ...spell, description: dynamicDesc, category: 'spell' }).replace(/"/g, '&quot;') : '';
 
           spellsListHTML += `
             <div class="compendium-card glass" style="position:relative; margin-bottom:12px; display:flex; flex-direction:column;">
               <div class="card-tag-row">${tagBadge}${actionTypeBadge}<div class="card-tag" style="background: ${badgeColor}">${spell.class || 'SPELL'}</div></div>
               <h3 class="card-title info-tooltip-trigger spell-cast-btn" data-html="${tooltipHtml}" data-id="${spellId}" data-cast-type="base" style="cursor: pointer; text-decoration: underline dotted; transition: color 0.2s;" onmouseover="this.style.color='var(--amber)'" onmouseout="this.style.color=''"> ${spell.name}</h3>
               <div class="card-meta" style="margin-bottom:8px;">Attunement: ${window.BB_STATE.getSpellAttunementCost(char, spell)} | Cost: ${spell.cost} | Activation: ${spell.actTime} | Range: ${spell.range} | Components: ${spell.components} | Duration: ${spell.duration}</div>
-              <p class="card-description" style="margin-bottom:12px;">${spell.description}</p>
+              <p class="card-description" style="margin-bottom:12px;">${dynamicDesc}</p>
               ${spell.overchargeDesc ? `
                 <div class="spell-overcharge glass" style="background:rgba(255,255,255,0.05); padding:8px; border-radius:4px; font-size:0.85rem; border-left:3px solid ${badgeColor}; margin-bottom:12px;">
                   <strong class="spell-cast-btn info-tooltip-trigger" data-html="<h4>Overcharge</h4><p style='margin:0; font-size:0.85rem; color:#fff;'>Overcharging represents a character pushing their mystical, divine, or innate energies beyond their normal limits. Each spell or ability that can be overcharged will describe exactly how its effects change and the predetermined cost associated with overcharging. You must decide to overcharge at the moment you cast or perform.</p>" data-id="${spellId}" data-cast-type="overcharge" style="color:var(--amber); cursor: pointer; text-decoration: underline dotted;">Overcharge (Cost: ${spell.overchargeCost}):</strong> ${spell.overchargeDesc}
