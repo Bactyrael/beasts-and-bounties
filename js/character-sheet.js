@@ -1380,6 +1380,11 @@ window.BB_CHARACTER_SHEET = (() => {
                     }
                     headerExtras += `</div>`;
                     if (headerExtras === `<div style="display:flex; gap:5px;"></div>`) headerExtras = "";
+                } else if (char.class === "Vanguard" && char.level >= 4) {
+                    let ilUses = (char.trackers && char.trackers["Iron Lungs"] !== undefined) ? char.trackers["Iron Lungs"] : 1;
+                    let ilDisabled = ilUses <= 0 ? "disabled" : "";
+                    let ilStyle = ilDisabled ? "opacity:0.5; cursor:not-allowed;" : "";
+                    headerExtras = `<button class="btn btn-xs btn-primary btn-iron-lungs" style="padding:2px 8px; font-size:0.75rem; display:flex; align-items:center; gap:5px; ${ilStyle}" title="Roll a die based on Dex to regain Stamina. If at max, gain Temp Stamina. Once per Long Rest." ${ilDisabled}><i class="fas fa-lungs"></i> Iron Lungs</button>`;
                 }
 
                 const hasTrackers = char.availableTrackers && char.availableTrackers.length > 0;
@@ -2837,6 +2842,49 @@ window.BB_CHARACTER_SHEET = (() => {
         char.trackers["studiousMeditationUsed"] = true;
         window.BB_STATE.saveCharacter(char);
         render();
+      });
+    });
+
+    document.querySelectorAll(".btn-iron-lungs").forEach(btn => {
+      btn.addEventListener("click", () => {
+        char.trackers = char.trackers || {};
+        let currentUses = char.trackers["Iron Lungs"] !== undefined ? char.trackers["Iron Lungs"] : 1;
+        if (currentUses <= 0) return;
+        
+        char.trackers["Iron Lungs"] = currentUses - 1;
+        
+        let dex = window.BB_STATE.getComputedStat(char, "Dex");
+        let die = 2;
+        if (dex >= 20) die = 20;
+        else if (dex >= 12) die = 12;
+        else if (dex >= 10) die = 10;
+        else if (dex >= 8) die = 8;
+        else if (dex >= 6) die = 6;
+        else if (dex >= 4) die = 4;
+        
+        window.BB_DICE.roll("Iron Lungs", 1, die, 0, 0, 0, false, "", 0, "", false, (rollRes) => {
+          let recovered = rollRes;
+          if (!char.vitals) char.vitals = { hp: 0, mp: 0, sp: 0, tempHp: 0, tempSp: 0 };
+          let maxSp = window.BB_STATE.getMaxSP(char);
+          
+          if (char.vitals.sp >= maxSp) {
+             char.vitals.tempSp = (char.vitals.tempSp || 0) + recovered;
+             window.BB_DICE.showToastNotification(`Iron Lungs: At max SP, gained ${recovered} Temp SP!`);
+          } else {
+             let missing = maxSp - char.vitals.sp;
+             let actualRecovered = Math.min(recovered, missing);
+             char.vitals.sp += actualRecovered;
+             let remainder = recovered - actualRecovered;
+             if (remainder > 0) {
+               char.vitals.tempSp = (char.vitals.tempSp || 0) + remainder;
+               window.BB_DICE.showToastNotification(`Iron Lungs: Recovered ${actualRecovered} SP and gained ${remainder} Temp SP!`);
+             } else {
+               window.BB_DICE.showToastNotification(`Iron Lungs: Recovered ${actualRecovered} SP!`);
+             }
+          }
+          window.BB_STATE.saveCharacter(char);
+          if (window.BB_APP && window.BB_APP.renderActiveTab) window.BB_APP.renderActiveTab();
+        });
       });
     });
 
