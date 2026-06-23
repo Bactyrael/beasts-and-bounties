@@ -1900,6 +1900,18 @@ window.BB_CHARACTER_SHEET = (() => {
               <button class="btn btn-primary" id="btn-attune-spell">Attune</button>
             </div>
           </div>
+          ${char.class === "Mage" ? `
+          <div class="spell-attune-panel glass" style="margin-top:15px; border-color:var(--amber);">
+            <h4 style="margin-bottom: 12px; color: var(--amber);">Codex</h4>
+            <label for="codex-attune-selector">Scribe Spell into Codex:</label>
+            <div class="attune-controls">
+              <select id="codex-attune-selector" class="form-control inline-select info-tooltip-trigger" data-type="spell">
+                <option value="">Choose Spell</option>
+              </select>
+              <button class="btn btn-primary" id="btn-codex-attune">Scribe</button>
+            </div>
+          </div>
+          ` : ''}
           ${imbueSectionHTML}
 
           <div class="attuned-spells-list">
