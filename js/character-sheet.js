@@ -2932,14 +2932,22 @@ window.BB_CHARACTER_SHEET = (() => {
           
           let maxHp = parseInt(char.hp.total) || 0;
           let curHp = parseInt(char.hp.current) || 0;
+          let tempHp = parseInt(char.hp.temp) || 0;
           
           if (curHp >= maxHp) {
-             window.BB_DICE.showToastNotification(`Exhilaration: Already at max HP!`);
+             char.hp.temp = tempHp + recovered;
+             window.BB_DICE.showToastNotification(`Exhilaration: At max HP, gained ${recovered} Temp HP!`);
           } else {
              let missing = maxHp - curHp;
              let actualRecovered = Math.min(recovered, missing);
              char.hp.current = curHp + actualRecovered;
-             window.BB_DICE.showToastNotification(`Exhilaration: Recovered ${actualRecovered} HP!`);
+             let remainder = recovered - actualRecovered;
+             if (remainder > 0) {
+               char.hp.temp = tempHp + remainder;
+               window.BB_DICE.showToastNotification(`Exhilaration: Recovered ${actualRecovered} HP and gained ${remainder} Temp HP!`);
+             } else {
+               window.BB_DICE.showToastNotification(`Exhilaration: Recovered ${actualRecovered} HP!`);
+             }
           }
           window.BB_STATE.saveCharacter(char);
           if (window.BB_APP && window.BB_APP.renderActiveTab) window.BB_APP.renderActiveTab();
