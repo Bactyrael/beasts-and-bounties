@@ -290,13 +290,13 @@ window.BB_STATE = (() => {
     let classBonus = 0;
     let featureName = "Feature";
     if (char.class === "Berserker" && char.level >= 10) {
-      if (statKey === "Str" || statKey === "Con") { classBonus += 4; featureName = "Unstoppable Force"; }
+      if (statKey === "Str" || statKey === "Con") { classBonus += 4; featureName = "Ancestral Might"; }
     }
     if (char.class === "Disciple" && char.level >= 10) {
-      if (statKey === "Dex" || statKey === "Con") { classBonus += 4; featureName = "Enlightenment"; }
+      if (statKey === "Dex" || statKey === "Con") { classBonus += 4; featureName = "Nirvana"; }
     }
     if (char.class === "Herald" && char.level >= 10) {
-      if (statKey === "Dex" || statKey === "Lck") { classBonus += 4; featureName = "Divine Avatar"; }
+      if (statKey === "Dex" || statKey === "Lck") { classBonus += 4; featureName = "Trip the Light Fantastic"; }
     }
     if (char.class === "Ranger" && char.level >= 10) {
       if (statKey === "Str" || statKey === "Dex" || statKey === "Wis") { classBonus += 2; featureName = "Apex Predator"; }
