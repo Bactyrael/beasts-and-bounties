@@ -1384,7 +1384,8 @@ window.BB_CHARACTER_SHEET = (() => {
                     headerExtras = `<div style="display:flex; gap:5px;">`;
                     if (char.level >= 6) {
                         let fbUses = (char.trackers && char.trackers["Further Beyond"] !== undefined) ? char.trackers["Further Beyond"] : 2;
-                        let fbDisabled = fbUses <= 0 ? "disabled" : "";
+                        let fbUsedThisTurn = char.trackers && char.trackers["Further Beyond Used This Turn"];
+                        let fbDisabled = (fbUses <= 0 || fbUsedThisTurn) ? "disabled" : "";
                         let fbStyle = fbDisabled ? "opacity:0.5; cursor:not-allowed;" : "";
                         headerExtras += `<button class="btn btn-xs btn-further-beyond" style="padding:2px 8px; font-size:0.75rem; display:flex; align-items:center; gap:5px; background:var(--sp-green, #40c057); border:none; color:#ffffff; ${fbStyle}" title="On your turn, gain one additional action. Twice per long rest." ${fbDisabled}><i class="fas fa-unlink"></i> Further Beyond</button>`;
                     }
@@ -2581,6 +2582,7 @@ window.BB_CHARACTER_SHEET = (() => {
     if (btnResetActions) {
       btnResetActions.addEventListener("click", () => {
         char.combatState = { action: false, bonusAction: false, reaction: false, movement: false };
+        if (char.trackers) delete char.trackers["Further Beyond Used This Turn"];
         window.BB_STATE.saveCharacter(char);
         document.querySelectorAll(".action-cb").forEach(cb => cb.checked = false);
         document.querySelectorAll(".action-quick-btn").forEach(b => {
@@ -2905,6 +2907,29 @@ window.BB_CHARACTER_SHEET = (() => {
           window.BB_STATE.saveCharacter(char);
           if (window.BB_APP && window.BB_APP.renderActiveTab) window.BB_APP.renderActiveTab();
         });
+      });
+    });
+
+    document.querySelectorAll(".btn-further-beyond").forEach(btn => {
+      btn.addEventListener("click", () => {
+        char.trackers = char.trackers || {};
+        char.combatState = char.combatState || { action: false, bonusAction: false, reaction: false, movement: false };
+        
+        let currentUses = char.trackers["Further Beyond"] !== undefined ? char.trackers["Further Beyond"] : 2;
+        if (currentUses <= 0 || char.trackers["Further Beyond Used This Turn"]) return;
+
+        if (!char.combatState.action) {
+          window.BB_DICE.showToastNotification("Your action is already full!");
+          return;
+        }
+        
+        char.trackers["Further Beyond"] = currentUses - 1;
+        char.trackers["Further Beyond Used This Turn"] = true;
+        char.combatState.action = false;
+        
+        window.BB_DICE.showToastNotification("Further Beyond: Regained your Action for this turn!");
+        window.BB_STATE.saveCharacter(char);
+        if (window.BB_APP && window.BB_APP.renderActiveTab) window.BB_APP.renderActiveTab();
       });
     });
 
@@ -4327,6 +4352,7 @@ window.BB_CHARACTER_SHEET = (() => {
         char.combatState.bonusAction = false;
         char.combatState.reaction = false;
         char.combatState.movement = false;
+        if (char.trackers) delete char.trackers["Further Beyond Used This Turn"];
         
         if (char.availableTrackers) {
           char.trackers = char.trackers || {};
@@ -4604,6 +4630,7 @@ window.BB_CHARACTER_SHEET = (() => {
         char.combatState.bonusAction = false;
         char.combatState.reaction = false;
         char.combatState.movement = false;
+        if (char.trackers) delete char.trackers["Further Beyond Used This Turn"];
 
         // Restore Class Trackers
         if (char.availableTrackers) {
