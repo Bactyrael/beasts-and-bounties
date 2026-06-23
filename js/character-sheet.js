@@ -1386,7 +1386,7 @@ window.BB_CHARACTER_SHEET = (() => {
                         let fbUses = (char.trackers && char.trackers["Further Beyond"] !== undefined) ? char.trackers["Further Beyond"] : 2;
                         let fbDisabled = fbUses <= 0 ? "disabled" : "";
                         let fbStyle = fbDisabled ? "opacity:0.5; cursor:not-allowed;" : "";
-                        headerExtras += `<button class="btn btn-xs btn-further-beyond" style="padding:2px 8px; font-size:0.75rem; display:flex; align-items:center; gap:5px; background:var(--sp-green, #40c057); border:none; color:#ffffff; ${fbStyle}" title="On your turn, gain one additional action. Twice per long rest." ${fbDisabled}>🗣️ Further Beyond</button>`;
+                        headerExtras += `<button class="btn btn-xs btn-further-beyond" style="padding:2px 8px; font-size:0.75rem; display:flex; align-items:center; gap:5px; background:var(--sp-green, #40c057); border:none; color:#ffffff; ${fbStyle}" title="On your turn, gain one additional action. Twice per long rest." ${fbDisabled}><i class="fas fa-unlink"></i> Further Beyond</button>`;
                     }
                     if (char.level >= 4) {
                         let ilUses = (char.trackers && char.trackers["Iron Lungs"] !== undefined) ? char.trackers["Iron Lungs"] : 1;
