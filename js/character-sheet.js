@@ -2902,6 +2902,51 @@ window.BB_CHARACTER_SHEET = (() => {
       });
     });
 
+    document.querySelectorAll(".btn-exhilaration").forEach(btn => {
+      btn.addEventListener("click", () => {
+        char.trackers = char.trackers || {};
+        char.combatState = char.combatState || { action: false, bonusAction: false, reaction: false, movement: false };
+        
+        let currentUses = char.trackers["Exhilaration"] !== undefined ? char.trackers["Exhilaration"] : 2;
+        if (currentUses <= 0) return;
+
+        if (char.combatState.bonusAction) {
+          window.BB_DICE.showToastNotification("You lack the Bonus Action economy to use Exhilaration!");
+          return;
+        }
+        
+        char.trackers["Exhilaration"] = currentUses - 1;
+        char.combatState.bonusAction = true;
+        
+        let die = 6;
+        if (char.level >= 10) die = 20;
+        else if (char.level >= 8) die = 12;
+        else if (char.level >= 6) die = 10;
+        else if (char.level >= 4) die = 8;
+        
+        let staticBonus = char.level;
+        
+        window.BB_DICE.roll("Exhilaration", 1, die, staticBonus, 0, 0, false, "", 0, `+${staticBonus} (Vanguard Level)`, false, (rollRes) => {
+          let recovered = rollRes;
+          if (!char.hp) char.hp = { current: 0, total: 0, temp: 0 };
+          
+          let maxHp = parseInt(char.hp.total) || 0;
+          let curHp = parseInt(char.hp.current) || 0;
+          
+          if (curHp >= maxHp) {
+             window.BB_DICE.showToastNotification(`Exhilaration: Already at max HP!`);
+          } else {
+             let missing = maxHp - curHp;
+             let actualRecovered = Math.min(recovered, missing);
+             char.hp.current = curHp + actualRecovered;
+             window.BB_DICE.showToastNotification(`Exhilaration: Recovered ${actualRecovered} HP!`);
+          }
+          window.BB_STATE.saveCharacter(char);
+          if (window.BB_APP && window.BB_APP.renderActiveTab) window.BB_APP.renderActiveTab();
+        });
+      });
+    });
+
     document.querySelectorAll(".btn-archmage").forEach(btn => {
       btn.addEventListener("click", () => {
         char.trackers = char.trackers || {};
