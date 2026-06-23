@@ -895,6 +895,7 @@ window.BB_CHARACTER_SHEET = (() => {
           <input type="number" class="def-input" id="move-val" value="${char.movement}" readonly style="font-size:1.2rem; font-weight:bold; background:transparent; border:none; color:#fff; width:100%; text-align:center; padding:0;">
         </div>
       </div>
+      ${char.hasUntrainedArmor ? `<div style="text-align:center; color:var(--danger); font-weight:bold; font-size:0.85rem; padding:5px; border:1px solid var(--danger); border-radius:4px; background:rgba(255,50,50,0.1); margin-top:10px; cursor:pointer;" class="info-tooltip-trigger" data-type="condition" data-name="Untrained Armor">⚠️ UNTRAINED ARMOR EQUIPPED ⚠️</div>` : ''}
 
       <!-- Col 2: Attributes -->
       <div style="display:grid; grid-template-columns: repeat(3, 1fr); gap:10px; align-items:center;">
