@@ -941,15 +941,57 @@ window.BB_CHARACTER_SHEET = (() => {
       ];
 
       let skillsHTML = "";
+
+      const getSkillAdvMode = (char, name) => {
+        let mode = 0;
+        if (name === "Diplomacy" && char.ancestry === "Ogre") mode = 2;
+        if (name === "Medicine" && char.equipment && char.equipment.head === "Beak Mask") mode = 2;
+        if (char.equipment && char.equipment.head === "Cap and Bells") {
+          if (name === "Performance") mode = 2;
+          if (name === "Diplomacy") mode = -2;
+        }
+        if (name === "Bushcraft" && char.equipment && char.equipment.head === "Flower Crown") mode = 2;
+        if (name === "Sleight of Hand" && char.equipment && char.equipment.hands === "Pickpocket's Pincers") mode = 2;
+        if (name === "Investigation" && char.equipment && char.equipment.head === "Myrlock's Monocle") mode = 2;
+        if (char.equipment && char.equipment.head === "Telepathy Topper" && (name === "Concentration" || name === "Awareness")) mode = -2;
+        if (name === "Diplomacy" && char.equipment && char.equipment.head === "Porcelain Guise") mode = 2;
+        if (name === "Browbeat" && char.equipment && char.equipment.head === "Grim Visage") mode = 2;
+        if (name === "Awareness" && char.equipment && char.equipment.head === "Familiar Facemask") mode = 2;
+        if (name === "Commerce" && char.equipment && char.equipment.head === "Coinoret") mode = 2;
+        if (name === "Concentration" && char.equipment && char.equipment.head === "Bear Skull") mode = 2;
+        if (name === "Knowledge" && char.equipment && char.equipment.head === "Fathomless Fez") mode = 2;
+        if (name === "Linguistics" && char.equipment && char.equipment.head === "Jabbercap") mode = 2;
+        if (name === "Sneak" && char.equipment) {
+          Object.values(char.equipment).forEach(itemName => {
+            if (itemName) {
+              const itemData = ((window.BB_DATABASE.ITEMS || []).concat(window.BB_DATABASE.MISC_ITEMS || [])).find(i => i.name === itemName);
+              if (itemData && itemData.sneakPenalty && itemData.sneakPenalty.toLowerCase().includes("disadvantage")) mode = -1;
+            }
+          });
+        }
+        return mode;
+      };
+
       skillsList.forEach(sk => {
         const classData = window.BB_DATABASE.CLASSES.find(c => c.name === char.class) || {};
         const isClassSkill = classData.skills && classData.skills.includes(sk.name);
         
-        let attrVal = window.BB_STATE.getComputedStat(char, sk.attr);
+        let displayAttr = sk.attr;
+        let displayName = sk.name;
+        
+        if (sk.name === "Diplomacy" && char.ancestry === "Ogre") {
+          displayAttr = "Lck";
+        }
+        
+        let advMode = getSkillAdvMode(char, sk.name);
+        if (advMode === 2) displayName += ` <span style="color:var(--stamina-gold); font-size:0.7rem;">[ADV]</span>`;
+        if (advMode === -2 || advMode === -1) displayName += ` <span style="color:var(--danger-red); font-size:0.7rem;">[DIS]</span>`;
+        
+        let attrVal = window.BB_STATE.getComputedStat(char, displayAttr);
         const attrMod = window.BB_STATE.getModifier(attrVal);
         
         let breakdown = [];
-        breakdown.push(`Modifier (${sk.attr}): <span style='float:right; color:var(--amber); font-weight:bold;'>${attrMod >= 0 ? '+' : ''}${attrMod}</span>`);
+        breakdown.push(`Modifier (${displayAttr}): <span style='float:right; color:var(--amber); font-weight:bold;'>${attrMod >= 0 ? '+' : ''}${attrMod}</span>`);
         let totalMod = attrMod;
 
         if (isClassSkill) {
@@ -1034,8 +1076,8 @@ window.BB_CHARACTER_SHEET = (() => {
         skillsHTML += `
           <div class="skill-item stat-roll-hook glass hover-lift info-tooltip-trigger" style="padding: 7px 8px; margin: 0; display: flex; justify-content: space-between; align-items: center; border-radius: 3px; border: 1px solid rgba(255,255,255,0.05); cursor:pointer;" data-type="skill" data-name="${sk.name}" data-label="${sk.name}" data-mod="${totalMod}" data-html="<h4>${sk.name} Breakdown</h4><p style='margin:0'>${breakdownHtml.replace(/"/g, '&quot;')}</p><hr style='border-color: rgba(255,255,255,0.1); margin: 8px 0;'><p style='font-size:0.85rem; color:#fff; margin:0;'>${(window.BB_DATABASE.SKILL_DESCRIPTIONS[sk.name] || '').replace(/"/g, '&quot;')}</p>">
             <div class="skill-label" style="display:flex; align-items:center; gap:8px; overflow:hidden;">
-              <span class="skill-name" style="font-weight:bold; color:#fff; font-size:0.85rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${sk.name}</span>
-              <span class="skill-attr" style="color:var(--text-light); font-size:0.65rem; white-space:nowrap;">(${sk.attr})</span>
+              <span class="skill-name" style="font-weight:bold; color:#fff; font-size:0.85rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${displayName}</span>
+              <span class="skill-attr" style="color:var(--text-light); font-size:0.65rem; white-space:nowrap;">(${displayAttr})</span>
             </div>
             <span class="skill-mod-display" style="color:var(--amber); font-weight:bold; font-size:0.9rem; white-space:nowrap;">${skillModStr}</span>
           </div>
