@@ -1392,7 +1392,7 @@ window.BB_CHARACTER_SHEET = (() => {
                         let exUses = (char.trackers && char.trackers["Exhilaration"] !== undefined) ? char.trackers["Exhilaration"] : 2;
                         let exDisabled = exUses <= 0 ? "disabled" : "";
                         let exStyle = exDisabled ? "opacity:0.5; cursor:not-allowed;" : "";
-                        headerExtras += `<button class="btn btn-xs btn-danger btn-exhilaration" style="padding:2px 8px; font-size:0.75rem; display:flex; align-items:center; gap:5px; background:var(--hp-red); border-color:var(--hp-red); color:#fff; ${exStyle}" title="As a bonus action, regain HP equal to Exhilaration Die + Vanguard level." ${exDisabled}>🫀 Exhilaration</button>`;
+                        headerExtras += `<button class="btn btn-xs btn-danger btn-exhilaration" style="padding:2px 8px; font-size:0.75rem; display:flex; align-items:center; gap:5px; background:#8a0303; border:none; color:#ffffff; ${exStyle}" title="As a bonus action, regain HP equal to Exhilaration Die + Vanguard level." ${exDisabled}>🫀 Exhilaration</button>`;
                     }
                     headerExtras += `</div>`;
                     if (headerExtras === `<div style="display:flex; gap:5px;"></div>`) headerExtras = "";
