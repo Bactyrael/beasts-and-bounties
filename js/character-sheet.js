@@ -1381,27 +1381,7 @@ window.BB_CHARACTER_SHEET = (() => {
                     headerExtras += `</div>`;
                     if (headerExtras === `<div style="display:flex; gap:5px;"></div>`) headerExtras = "";
                 } else if (char.class === "Vanguard") {
-                    headerExtras = `<div style="display:flex; gap:5px;">`;
-                    if (char.level >= 6) {
-                        let fbUses = (char.trackers && char.trackers["Further Beyond"] !== undefined) ? char.trackers["Further Beyond"] : 2;
-                        let fbUsedThisTurn = char.trackers && char.trackers["Further Beyond Used This Turn"];
-                        let fbDisabled = (fbUses <= 0 || fbUsedThisTurn) ? "disabled" : "";
-                        let fbStyle = fbDisabled ? "opacity:0.5; cursor:not-allowed;" : "";
-                        headerExtras += `<button class="btn btn-xs btn-further-beyond" style="padding:2px 8px; font-size:0.75rem; display:flex; align-items:center; gap:5px; background:var(--sp-green, #40c057); border:none; color:#ffffff; ${fbStyle}" title="On your turn, gain one additional action. Twice per long rest." ${fbDisabled}><i class="fas fa-unlink"></i> Further Beyond</button>`;
-                    }
-                    if (char.level >= 4) {
-                        let ilUses = (char.trackers && char.trackers["Iron Lungs"] !== undefined) ? char.trackers["Iron Lungs"] : 1;
-                        let ilDisabled = ilUses <= 0 ? "disabled" : "";
-                        let ilStyle = ilDisabled ? "opacity:0.5; cursor:not-allowed;" : "";
-                        headerExtras += `<button class="btn btn-xs btn-primary btn-iron-lungs" style="padding:2px 8px; font-size:0.75rem; display:flex; align-items:center; gap:5px; ${ilStyle}" title="Roll a die based on Dex to regain Stamina. If at max, gain Temp Stamina. Once per Long Rest." ${ilDisabled}><i class="fas fa-lungs"></i> Iron Lungs</button>`;
-                    }
-                    if (char.level >= 2) {
-                        let exUses = (char.trackers && char.trackers["Exhilaration"] !== undefined) ? char.trackers["Exhilaration"] : 2;
-                        let exDisabled = exUses <= 0 ? "disabled" : "";
-                        let exStyle = exDisabled ? "opacity:0.5; cursor:not-allowed;" : "";
-                        headerExtras += `<button class="btn btn-xs btn-danger btn-exhilaration" style="padding:2px 8px; font-size:0.75rem; display:flex; align-items:center; gap:5px; background:#8a0303; border:none; color:#ffffff; ${exStyle}" title="As a bonus action, regain HP equal to Exhilaration Die + Vanguard level." ${exDisabled}>🫀 Exhilaration</button>`;
-                    }
-                    headerExtras += `</div>`;
+                    headerExtras = "";
 
                     let numStances = char.level >= 8 ? 2 : 1;
                     char.stances = char.stances || [];
@@ -1419,8 +1399,6 @@ window.BB_CHARACTER_SHEET = (() => {
                     }
                     stanceHtml += `</div>`;
                     headerExtras += stanceHtml;
-
-                    if (headerExtras === `<div style="display:flex; gap:5px;"></div>` + stanceHtml) headerExtras = "";
                 }
 
                 const hasTrackers = char.availableTrackers && char.availableTrackers.length > 0;
@@ -1436,8 +1414,25 @@ window.BB_CHARACTER_SHEET = (() => {
                     trackersHtml += `<div style="display:flex; flex-direction:column; gap:10px;">`;
                     char.availableTrackers.forEach((tracker) => {
                       let currentVal = char.trackers[tracker.name] || 0;
+                      
+                      let nameHtml = `<strong style="font-size:0.8rem; color:var(--text-light);">${tracker.name}</strong>`;
+                      if (tracker.name === "Further Beyond") {
+                        let fbUsedThisTurn = char.trackers && char.trackers["Further Beyond Used This Turn"];
+                        let fbDisabled = (currentVal <= 0 || fbUsedThisTurn) ? "disabled" : "";
+                        let fbStyle = fbDisabled ? "opacity:0.5; cursor:not-allowed;" : "";
+                        nameHtml = `<button class="btn btn-xs btn-further-beyond" style="padding:2px 8px; font-size:0.75rem; display:flex; align-items:center; gap:5px; background:var(--sp-green, #40c057); border:none; color:#ffffff; ${fbStyle}" title="On your turn, gain one additional action. Twice per long rest." ${fbDisabled}><i class="fas fa-unlink"></i> Further Beyond</button>`;
+                      } else if (tracker.name === "Iron Lungs") {
+                        let ilDisabled = currentVal <= 0 ? "disabled" : "";
+                        let ilStyle = ilDisabled ? "opacity:0.5; cursor:not-allowed;" : "";
+                        nameHtml = `<button class="btn btn-xs btn-primary btn-iron-lungs" style="padding:2px 8px; font-size:0.75rem; display:flex; align-items:center; gap:5px; ${ilStyle}" title="Roll a die based on Dex to regain Stamina. If at max, gain Temp Stamina. Once per Long Rest." ${ilDisabled}><i class="fas fa-lungs"></i> Iron Lungs</button>`;
+                      } else if (tracker.name === "Exhilaration") {
+                        let exDisabled = currentVal <= 0 ? "disabled" : "";
+                        let exStyle = exDisabled ? "opacity:0.5; cursor:not-allowed;" : "";
+                        nameHtml = `<button class="btn btn-xs btn-danger btn-exhilaration" style="padding:2px 8px; font-size:0.75rem; display:flex; align-items:center; gap:5px; background:#8a0303; border:none; color:#ffffff; ${exStyle}" title="As a bonus action, regain HP equal to Exhilaration Die + Vanguard level." ${exDisabled}>&#129504; Exhilaration</button>`;
+                      }
+
                       trackersHtml += `<div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:5px;">
-                        <strong style="font-size:0.8rem; color:var(--text-light);">${tracker.name}</strong>`;
+                        ${nameHtml}`;
                       if (tracker.type === "checkboxes") {
                         trackersHtml += `<div style="display:flex; gap:4px; align-items:center;">`;
                         for (let i = 1; i <= tracker.max; i++) {
