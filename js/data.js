@@ -5384,7 +5384,7 @@ window.BB_DATABASE = {
       range: "60 ft",
       components: "None",
       duration: "Instant",
-      description: "When your familiar is within 60 feet of you, you may use your Reaction to do one of the following:\n• Swap: You and your familiar instantly exchange positions.\n• Blink to Familiar: You teleport to an unoccupied space within 5 feet of your familiar.\n• Familiar Blink: Your familiar teleports to an unoccupied space within 5 feet of you.\nThese movements do not provoke opportunity attacks if they would move you or your familiar out of a creature's reach."
+      description: "When your familiar is within 60 feet of you, you may use your Reaction to do one of the following:<br><br>• Swap: You and your familiar instantly exchange positions.<br><br>• Blink to Familiar: You teleport to an unoccupied space within 5 feet of your familiar.<br><br>• Familiar Blink: Your familiar teleports to an unoccupied space within 5 feet of you.<br><br>These movements do not provoke opportunity attacks if they would move you or your familiar out of a creature's reach."
     }
 ],
   ITEMS: [
