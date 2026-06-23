@@ -954,6 +954,7 @@ window.BB_CHARACTER_SHEET = (() => {
 
       const getSkillAdvMode = (char, name) => {
         let mode = 0;
+        if (name === "Commerce" && char.class === "Prowler" && char.level >= 6) mode = 2;
         if (name === "Diplomacy" && char.race === "Ogre") mode = 2;
         if (name === "Medicine" && char.equipment && char.equipment.head === "Beak Mask") mode = 2;
         if (char.equipment && char.equipment.head === "Cap and Bells") {
