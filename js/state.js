@@ -443,6 +443,7 @@ window.BB_STATE = (() => {
     getModifier,
     getModifierString,
     getComputedStat,
+    getStatBreakdown,
     getSavedCharacters: () => savedCharacters,
     getActiveCharacter: () => activeCharacter,
     getDiceLog: () => diceLog,

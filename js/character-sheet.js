@@ -757,11 +757,8 @@ window.BB_CHARACTER_SHEET = (() => {
         let mod = window.BB_STATE.getModifier(computedVal);
         let modStr = mod >= 0 ? "+" + mod : mod;
         
-        let breakdownStr = `${innateVal} (Base)`;
-        const raceData = window.BB_DATABASE && window.BB_DATABASE.SPECIES ? window.BB_DATABASE.SPECIES.find(s => s.name && s.name.toLowerCase() === (char.race || "").toLowerCase()) : {};
-        if (raceData && raceData.bonuses && raceData.bonuses[statKey]) breakdownStr += `&#10;+${raceData.bonuses[statKey]} (Ancestry)`;
-        const diff = computedVal - innateVal - (raceData && raceData.bonuses && raceData.bonuses[statKey] ? raceData.bonuses[statKey] : 0);
-        if (diff > 0) breakdownStr += `&#10;+${diff} (Equipment/Other)`;
+        const breakdownArray = window.BB_STATE.getStatBreakdown ? window.BB_STATE.getStatBreakdown(char, statKey) : [];
+        let breakdownStr = breakdownArray.map(b => b.label === "Base" ? `${b.value} (Base)` : `+${b.value} (${b.label})`).join("&#10;");
 
         let addBtn = "";
         if (unspentPoints > 0 && computedVal < 30) {
