@@ -243,6 +243,97 @@ window.BB_STATE = (() => {
     return totalVal;
   }
 
+  function getStatBreakdown(char, statKey) {
+    if (!char || !char.stats) return [{ label: "Base", value: 10 }];
+    let innateVal = char.stats[statKey] || 10;
+    let breakdown = [{ label: "Base", value: innateVal }];
+    
+    // Check Ancestry
+    const raceData = window.BB_DATABASE && window.BB_DATABASE.SPECIES ? window.BB_DATABASE.SPECIES.find(s => s.name && s.name.toLowerCase() === (char.race || "").toLowerCase()) : {};
+    let ancestryBonus = raceData && raceData.bonuses && raceData.bonuses[statKey] ? raceData.bonuses[statKey] : 0;
+    if (ancestryBonus > 0) {
+      breakdown.push({ label: "Ancestry", value: ancestryBonus });
+    }
+    
+    // Check Equipment
+    let equipBonus = 0;
+    const statNameMap = { "Str": "Strength", "Dex": "Dexterity", "Con": "Constitution", "Int": "Intelligence", "Wis": "Wisdom", "Lck": "Luck" };
+    const statName = statNameMap[statKey] || statKey;
+
+    if (char.equipment && window.BB_DATABASE && window.BB_DATABASE.ITEMS) {
+      Object.values(char.equipment).forEach(itemName => {
+        if (!itemName || typeof itemName !== 'string') return;
+        const item = ((window.BB_DATABASE.ITEMS || []).concat(window.BB_DATABASE.MISC_ITEMS || [])).find(i => i.name === itemName);
+        if (item) {
+          let bonus = 0;
+          if (item.description) {
+            const regexDesc = new RegExp(`\\+([0-9]+) to ${statName}`, 'i');
+            const matchDesc = item.description.match(regexDesc);
+            if (matchDesc) bonus += parseInt(matchDesc[1]);
+          }
+          if (item.affix) {
+            const regexAffix = new RegExp(`Your ${statName} score increases by \\+([0-9]+)`, 'i');
+            const matchAffix = item.affix.match(regexAffix);
+            if (matchAffix) bonus += parseInt(matchAffix[1]);
+          }
+          if (bonus > 0) {
+            equipBonus += bonus;
+          }
+        }
+      });
+    }
+    if (equipBonus > 0) {
+      breakdown.push({ label: "Equipment", value: equipBonus });
+    }
+
+    // Check Class Features
+    let classBonus = 0;
+    let featureName = "Feature";
+    if (char.class === "Berserker" && char.level >= 10) {
+      if (statKey === "Str" || statKey === "Con") { classBonus += 4; featureName = "Unstoppable Force"; }
+    }
+    if (char.class === "Disciple" && char.level >= 10) {
+      if (statKey === "Dex" || statKey === "Con") { classBonus += 4; featureName = "Enlightenment"; }
+    }
+    if (char.class === "Herald" && char.level >= 10) {
+      if (statKey === "Dex" || statKey === "Lck") { classBonus += 4; featureName = "Divine Avatar"; }
+    }
+    if (char.class === "Ranger" && char.level >= 10) {
+      if (statKey === "Str" || statKey === "Dex" || statKey === "Wis") { classBonus += 2; featureName = "Apex Predator"; }
+    }
+    if (char.class === "Occultist" && char.level >= 10) {
+      if (statKey === "Wis" || statKey === "Int" || statKey === "Con") { classBonus += 2; featureName = "Beyond the Pale"; }
+    }
+
+    if (classBonus > 0) {
+      breakdown.push({ label: featureName, value: classBonus });
+    }
+
+    // Override limits/set values
+    let totalVal = innateVal + equipBonus + ancestryBonus + classBonus;
+    
+    if (statKey === "Int" && char.equipment && char.equipment.head === "Starveil" && totalVal < 18) {
+      breakdown.push({ label: "Starveil", value: 18 - totalVal });
+    }
+    if (statKey === "Wis" && char.equipment && char.equipment.head === "Evergreen" && totalVal < 18) {
+      breakdown.push({ label: "Evergreen", value: 18 - totalVal });
+    }
+    if (statKey === "Con" && char.equipment && char.equipment.armor === "Heartcord" && totalVal < 18) {
+      breakdown.push({ label: "Heartcord", value: 18 - totalVal });
+    }
+    if (statKey === "Lck" && char.equipment && char.equipment.hands === "Caspian Clutches" && totalVal < 18) {
+      breakdown.push({ label: "Caspian Clutches", value: 18 - totalVal });
+    }
+    if (statKey === "Dex" && char.equipment && char.equipment.feet === "Dragon Riders" && totalVal < 18) {
+      breakdown.push({ label: "Dragon Riders", value: 18 - totalVal });
+    }
+    if (statKey === "Str" && char.equipment && char.equipment.waist === "String of Ears" && totalVal < 18) {
+      breakdown.push({ label: "String of Ears", value: 18 - totalVal });
+    }
+
+    return breakdown;
+  }
+
   function migrateCharacterInventory(char) {
     if (!char.inventorySlots || !Array.isArray(char.inventorySlots)) return;
     
