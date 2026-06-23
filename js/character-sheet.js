@@ -1768,6 +1768,34 @@ window.BB_CHARACTER_SHEET = (() => {
       // Deduplicate to prevent an ability granted multiple ways from showing twice
       const uniqueSpells = [...new Set(allSpells)];
 
+      let scribingSpellsHTML = "";
+      if (char.class === "Mage" && char.scribingSpell && char.scribingSpell.spellId) {
+        const spell = window.BB_DATABASE.SPELLS.find(s => s.id === char.scribingSpell.spellId);
+        if (spell) {
+          const progressPercent = Math.min(100, (char.scribingSpell.completedRests / char.scribingSpell.requiredRests) * 100);
+          scribingSpellsHTML = `
+            <div class="attuned-spell-card glass" style="border: 1px solid var(--mana-blue); margin-bottom: 15px;">
+              <div class="card-tag-row">
+                <div class="card-tag" style="background: var(--amber)">SCRIBING IN PROGRESS</div>
+              </div>
+              <h3 class="card-title">${spell.name}</h3>
+              <div style="margin-top: 10px; margin-bottom: 5px;">
+                <div style="display: flex; justify-content: space-between; font-size: 0.85rem; margin-bottom: 4px;">
+                  <span>Study Progress</span>
+                  <span>${char.scribingSpell.completedRests} / ${char.scribingSpell.requiredRests} Long Rests</span>
+                </div>
+                <div style="width: 100%; height: 8px; background: rgba(0,0,0,0.5); border-radius: 4px; overflow: hidden;">
+                  <div style="width: ${progressPercent}%; height: 100%; background: var(--mana-blue); transition: width 0.3s;"></div>
+                </div>
+              </div>
+              <div style="display: flex; justify-content: flex-end; margin-top: 10px;">
+                <button class="btn btn-danger btn-xs btn-cancel-scribe" style="padding:4px 16px;">Cancel Scribing</button>
+              </div>
+            </div>
+          `;
+        }
+      }
+
       if (uniqueSpells.length === 0) {
         spellsListHTML = `<p class="no-spells-text">No attuned spells or abilities. Open the compendium to see your available options.</p>`;
       } else {
@@ -1835,12 +1863,15 @@ window.BB_CHARACTER_SHEET = (() => {
       // Codex choices (all spells in the game, actionType === 'Spell', excluding Mage spells)
       let codexOptions = "";
       if (char.class === "Mage") {
+        let isScribing = char.scribingSpell && char.scribingSpell.spellId;
         window.BB_DATABASE.SPELLS.forEach(spell => {
-          if (spell.actionType === 'Spell' && spell.class !== "Mage" && !char.spells.includes(spell.id) && !Object.values(char.imbuedSpells || {}).includes(spell.id) && (!char.grantedAbilities || !char.grantedAbilities.includes(spell.id))) {
+          let hasManaCost = (spell.cost || "").match(/(\d+)\s*Mana/i);
+          if (spell.actionType === 'Spell' && spell.class !== "Mage" && hasManaCost && !char.spells.includes(spell.id) && !Object.values(char.imbuedSpells || {}).includes(spell.id) && (!char.grantedAbilities || !char.grantedAbilities.includes(spell.id))) {
             let req = spell.attunement || 0;
-            let isDisabled = req > availableAttunement;
+            let isDisabled = req > availableAttunement || isScribing;
+            let disableReason = isScribing ? '- Already Scribing' : (req > availableAttunement ? '- Not enough slots' : '');
             codexOptions += `<option value="${spell.id}" ${isDisabled ? 'disabled' : ''}>
-              ${spell.name} [${spell.class}] (Attunement: ${req}) ${isDisabled ? '- Not enough slots' : ''}
+              ${spell.name} [${spell.class}] (Attunement: ${req}) ${disableReason}
             </option>`;
           }
         });
@@ -1931,6 +1962,7 @@ window.BB_CHARACTER_SHEET = (() => {
           ${imbueSectionHTML}
 
           <div class="attuned-spells-list">
+            ${scribingSpellsHTML}
             ${spellsListHTML}
           </div>
         </div>
@@ -3581,6 +3613,63 @@ window.BB_CHARACTER_SHEET = (() => {
       });
     }
 
+    // Codex scribe trigger
+    const btnCodexAttune = document.getElementById("btn-codex-attune");
+    const codexSelector = document.getElementById("codex-attune-selector");
+    if (btnCodexAttune && codexSelector) {
+      btnCodexAttune.addEventListener("click", () => {
+        const spellId = codexSelector.value;
+        if (!spellId) return;
+
+        if (char.scribingSpell && char.scribingSpell.spellId) {
+          if (window.BB_DICE && window.BB_DICE.showToastNotification) {
+            window.BB_DICE.showToastNotification("Already scribing a spell! Cancel current scribing first.");
+          }
+          return;
+        }
+
+        const spellData = window.BB_DATABASE.SPELLS.find(s => s.id === spellId);
+        if (spellData) {
+          if (char.attunement.used + spellData.attunement > char.attunement.total) {
+            if (window.BB_DICE && window.BB_DICE.showToastNotification) {
+              window.BB_DICE.showToastNotification("Not enough attunement slots available!");
+            }
+            return;
+          }
+
+          let match = (spellData.cost || "").match(/(\d+)\s*Mana/i);
+          if (!match) return; // Should not happen due to dropdown filter
+
+          char.scribingSpell = {
+            spellId: spellId,
+            requiredRests: parseInt(match[1]),
+            completedRests: 0,
+            slotCost: spellData.attunement
+          };
+
+          char.attunement.used += spellData.attunement;
+          window.BB_STATE.saveCharacter(char);
+          
+          if (window.BB_DICE && window.BB_DICE.showToastNotification) {
+            window.BB_DICE.showToastNotification(`Began scribing ${spellData.name} into your Codex.`);
+          }
+          render();
+        }
+      });
+    }
+
+    const btnCancelScribe = document.querySelector(".btn-cancel-scribe");
+    if (btnCancelScribe) {
+      btnCancelScribe.addEventListener("click", () => {
+        if (char.scribingSpell) {
+          char.attunement.used = Math.max(0, char.attunement.used - (char.scribingSpell.slotCost || 0));
+          delete char.scribingSpell;
+          window.BB_STATE.saveCharacter(char);
+          render();
+        }
+      });
+    }
+
     // Unattune spell triggers
     document.querySelectorAll(".btn-unattune").forEach(btn => {
       btn.addEventListener("click", () => {
@@ -4097,6 +4186,27 @@ window.BB_CHARACTER_SHEET = (() => {
             }
           }
         }
+        // Codex Scribing Progress (Short Rest, Fast Learner)
+        if (char.class === "Mage" && char.level >= 7 && char.scribingSpell && char.scribingSpell.spellId) {
+          char.scribingSpell.completedRests += 1;
+          if (char.scribingSpell.completedRests >= char.scribingSpell.requiredRests) {
+            char.spells.push(char.scribingSpell.spellId);
+            const scribedSpellName = window.BB_DATABASE.SPELLS.find(s => s.id === char.scribingSpell.spellId)?.name || "Spell";
+            delete char.scribingSpell;
+            if (window.BB_DICE && window.BB_DICE.showToastNotification) {
+              setTimeout(() => {
+                window.BB_DICE.showToastNotification(`Codex: Finished scribing ${scribedSpellName}!`);
+              }, 1500);
+            }
+          } else {
+            if (window.BB_DICE && window.BB_DICE.showToastNotification) {
+              setTimeout(() => {
+                const spellName = window.BB_DATABASE.SPELLS.find(s => s.id === char.scribingSpell.spellId)?.name || "Spell";
+                window.BB_DICE.showToastNotification(`Codex: Scribing ${spellName} progress: ${char.scribingSpell.completedRests}/${char.scribingSpell.requiredRests}`);
+              }, 1500);
+            }
+          }
+        }
 
         window.BB_STATE.saveCharacter(char);
         if (window.BB_DICE && window.BB_DICE.showToastNotification) {
@@ -4328,6 +4438,29 @@ window.BB_CHARACTER_SHEET = (() => {
             let currentStep = steps.indexOf(indomDie.size);
             if (currentStep !== -1 && currentStep < steps.length - 1) {
               indomDie.size = steps[currentStep + 1];
+            }
+          }
+        }
+        // Codex Scribing Progress (Long Rest)
+        if (char.class === "Mage" && char.scribingSpell && char.scribingSpell.spellId) {
+          const progressInc = char.level >= 7 ? 2 : 1;
+          char.scribingSpell.completedRests += progressInc;
+          
+          if (char.scribingSpell.completedRests >= char.scribingSpell.requiredRests) {
+            char.spells.push(char.scribingSpell.spellId);
+            const scribedSpellName = window.BB_DATABASE.SPELLS.find(s => s.id === char.scribingSpell.spellId)?.name || "Spell";
+            delete char.scribingSpell;
+            if (window.BB_DICE && window.BB_DICE.showToastNotification) {
+              setTimeout(() => {
+                window.BB_DICE.showToastNotification(`Codex: Finished scribing ${scribedSpellName}!`);
+              }, 1500);
+            }
+          } else {
+            if (window.BB_DICE && window.BB_DICE.showToastNotification) {
+              setTimeout(() => {
+                const spellName = window.BB_DATABASE.SPELLS.find(s => s.id === char.scribingSpell.spellId)?.name || "Spell";
+                window.BB_DICE.showToastNotification(`Codex: Scribing ${spellName} progress: ${char.scribingSpell.completedRests}/${char.scribingSpell.requiredRests}`);
+              }, 1500);
             }
           }
         }
