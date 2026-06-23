@@ -1537,6 +1537,29 @@ window.BB_CHARACTER_SHEET = (() => {
                         }
                     }
 
+                    if (item && item.block && char.stances && char.stances.includes("Defensive Stance")) {
+                        item = JSON.parse(JSON.stringify(item));
+                        item.damageType = "Bludgeoning";
+                        item.damageStat = "Strength";
+                        if (item.block === 2) {
+                            item.damageDie = "1d4";
+                            item.grip = "Dual";
+                        } else if (item.block === 3) {
+                            item.damageDie = "1d6";
+                            item.grip = "Single";
+                        } else if (item.block >= 4) {
+                            item.damageDie = "1d8";
+                            item.grip = "Double";
+                        }
+                    }
+
+                    let mightyPenalty = "";
+                    if (item && item.grip === "Double" && (!item.properties || !item.properties.includes("Ranged")) && char.stances && char.stances.includes("Mighty Stance")) {
+                        item = JSON.parse(JSON.stringify(item));
+                        item.grip = "Single";
+                        mightyPenalty = "(Reach -5ft) ";
+                    }
+
                     if (item && item.damageDie) {
                       hasWeaponEquipped = true;
                       let modVal = 0;
@@ -1598,8 +1621,11 @@ window.BB_CHARACTER_SHEET = (() => {
                       }
                       
                       if (item.grip === "Dual" && slot === "offHand") {
-                        modVal = 0;
-                        modStat = "None";
+                        let hasFuriousStance = char.stances && char.stances.includes("Furious Stance");
+                        if (!hasFuriousStance) {
+                          modVal = 0;
+                          modStat = "None";
+                        }
                       }
                       if (modVal < 0) modVal = 0;
                       
@@ -1649,7 +1675,7 @@ window.BB_CHARACTER_SHEET = (() => {
                       
                       let finalCritRange = Math.min(totalCritRange, maxCritCap);
                       
-                      let labelPrefix = isImprovised ? "Improvised " : "";
+                      let labelPrefix = (isImprovised ? "Improvised " : "") + mightyPenalty;
                       let titleStr = `Roll ${count}d${type} ${modVal >= 0 ? '+'+modVal : modVal} (Base Crit: ${baseCritRange}, Max: ${maxCritCap})`;
                       
                       let displaySlot = slot === "mainHand" ? "Main Hand" : (slot === "offHand" ? "Off Hand" : slot.charAt(0).toUpperCase() + slot.slice(1));
@@ -2729,7 +2755,8 @@ window.BB_CHARACTER_SHEET = (() => {
         
         let advDis = 0;
         if (grip === "Colossal") {
-          advDis = -2;
+          let hasGiantStance = char.stances && char.stances.includes("Giant Stance");
+          if (!hasGiantStance) advDis = -2;
         }
 
         if (slot === "consumable") {
@@ -2983,6 +3010,69 @@ window.BB_CHARACTER_SHEET = (() => {
           window.BB_STATE.saveCharacter(char);
           if (window.BB_APP && window.BB_APP.renderActiveTab) window.BB_APP.renderActiveTab();
         });
+      });
+    });
+
+    document.querySelectorAll(".btn-exhilaration").forEach(btn => {
+      btn.addEventListener("click", () => {
+        char.trackers = char.trackers || {};
+        char.combatState = char.combatState || { action: false, bonusAction: false, reaction: false, movement: false };
+        
+        let currentUses = char.trackers["Exhilaration"] !== undefined ? char.trackers["Exhilaration"] : 2;
+        if (currentUses <= 0) return;
+
+        if (char.combatState.bonusAction) {
+          window.BB_DICE.showToastNotification("You lack the Bonus Action economy to use Exhilaration!");
+          return;
+        }
+        
+        char.trackers["Exhilaration"] = currentUses - 1;
+        char.combatState.bonusAction = true;
+        
+        let die = 6;
+        if (char.level >= 10) die = 20;
+        else if (char.level >= 8) die = 12;
+        else if (char.level >= 6) die = 10;
+        else if (char.level >= 4) die = 8;
+        
+        let staticBonus = char.level;
+        
+        window.BB_DICE.roll("Exhilaration", 1, die, staticBonus, 0, 0, false, "", 0, `+${staticBonus} (Vanguard Level)`, false, (rollRes) => {
+          let recovered = rollRes;
+          if (!char.hp) char.hp = { current: 0, total: 0, temp: 0 };
+          
+          let maxHp = parseInt(char.hp.total) || 0;
+          let curHp = parseInt(char.hp.current) || 0;
+          let tempHp = parseInt(char.hp.temp) || 0;
+          
+          if (curHp >= maxHp) {
+             char.hp.temp = tempHp + recovered;
+             window.BB_DICE.showToastNotification(`Exhilaration: At max HP, gained ${recovered} Temp HP!`);
+          } else {
+             let missing = maxHp - curHp;
+             let actualRecovered = Math.min(recovered, missing);
+             char.hp.current = curHp + actualRecovered;
+             let remainder = recovered - actualRecovered;
+             if (remainder > 0) {
+               char.hp.temp = tempHp + remainder;
+               window.BB_DICE.showToastNotification(`Exhilaration: Recovered ${actualRecovered} HP and gained ${remainder} Temp HP!`);
+             } else {
+               window.BB_DICE.showToastNotification(`Exhilaration: Recovered ${actualRecovered} HP!`);
+             }
+          }
+          window.BB_STATE.saveCharacter(char);
+          if (window.BB_APP && window.BB_APP.renderActiveTab) window.BB_APP.renderActiveTab();
+        });
+      });
+    });
+
+    document.querySelectorAll(".vanguard-stance-select").forEach(sel => {
+      sel.addEventListener("change", (e) => {
+        let index = parseInt(e.target.getAttribute("data-index"));
+        char.stances = char.stances || [];
+        char.stances[index] = e.target.value;
+        window.BB_STATE.saveCharacter(char);
+        render();
       });
     });
 
@@ -3780,7 +3870,7 @@ window.BB_CHARACTER_SHEET = (() => {
           if (mainHandItem && ["Double", "Colossal"].includes(mainHandItem.grip)) {
             let allowedByVanguard = false;
             if (mainHandItem.grip === "Double" && (!mainHandItem.properties || !mainHandItem.properties.includes("Ranged"))) {
-              if (char.talents && char.talents.some(t => typeof t === 'string' && t.includes("Mighty Stance"))) {
+              if (char.stances && char.stances.includes("Mighty Stance")) {
                 allowedByVanguard = true;
               }
             }
