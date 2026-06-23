@@ -248,7 +248,7 @@ window.BB_DATABASE = {
       description: `Born of Orc and Giant blood, Trolls are broad-shouldered and sinewy, built for endurance rather than sheer size. Their dark slate-colored skin carries faint blue undertones, while small tusks and pointed ears reveal their Orcish heritage. Standing slightly smaller than Orcs but sturdier than most folk, Trolls possess powerful limbs suited for digging, climbing, and labor beneath the earth.\nTheir eyes glow in shades of amber, gray, or moss-green, reflecting the dim light of their subterranean homes. Sparse hair, practical clothing, and minimal ornamentation are common among their kind. Renowned for their regenerative abilities and hide-like skin, Trolls are living embodiments of resilience, enduring hardships that would cripple most races.`, 
       bonuses: { Str: 3, Con: 2, Dex: 1 }, 
       skillBonuses: { "Browbeat": 2, "Endurance": 2 },
-      ancestralFeat: { name: "Troll Blood", desc: "The tenacious anatomy of trolls allows for accelerated regeneration. You gain an Advantage Die on Rest Dice you roll during a Short Rest." },
+      ancestralFeat: { name: "Troll Blood", desc: "The tenacious anatomy of trolls allows for accelerated regeneration. You gain an Advantage Die on Rest Dice you roll." },
       features: [
         { name: "Age", desc: "Trolls reach physical maturity at roughly the same rate as Giants, though their longevity surpasses that of their Orcish kin. Most Trolls live to be around 120 years old, though some have been known to endure far longer beneath the earth." },
         { name: "Size", desc: "Trolls are just slightly smaller than Orcs, with broad frames built for endurance. Your size is Medium." },
