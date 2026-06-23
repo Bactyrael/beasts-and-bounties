@@ -39,16 +39,27 @@ window.BB_DICE = (() => {
     // Read global advantage toggle
     const advToggle = document.getElementById("advantage-toggle");
     if (advToggle && advToggle.value !== "normal") {
-      if (advToggle.value === "adv_dice" || advToggle.value === "advantage") advantageMode = 1;
-      else if (advToggle.value === "dis_dice" || advToggle.value === "disadvantage") advantageMode = -1;
-      else if (advToggle.value === "adv_die") advantageMode = 2;
-      else if (advToggle.value === "dis_die") advantageMode = -2;
+      let uiMode = 0;
+      if (advToggle.value === "adv_dice" || advToggle.value === "advantage") uiMode = 1;
+      else if (advToggle.value === "dis_dice" || advToggle.value === "disadvantage") uiMode = -1;
+      else if (advToggle.value === "adv_die") uiMode = 2;
+      else if (advToggle.value === "dis_die") uiMode = -2;
+
+      if ((advantageMode > 0 && uiMode < 0) || (advantageMode < 0 && uiMode > 0)) {
+        advantageMode = 0; // Cancel out
+      } else {
+        advantageMode = uiMode; // Otherwise, UI override takes precedence
+      }
     }
 
     // Global Untrained Armor Penalty
     const char = window.BB_STATE.getActiveCharacter && window.BB_STATE.getActiveCharacter();
     if (char && char.hasUntrainedArmor) {
-      advantageMode = -1;
+      if (advantageMode > 0) {
+        advantageMode = 0; // Cancels advantage
+      } else {
+        advantageMode = -1; // Imposes disadvantage
+      }
       if (!label.includes("(Untrained Armor)")) {
         label += " (Untrained Armor)";
       }
