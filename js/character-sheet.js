@@ -944,7 +944,7 @@ window.BB_CHARACTER_SHEET = (() => {
 
       const getSkillAdvMode = (char, name) => {
         let mode = 0;
-        if (name === "Diplomacy" && char.ancestry === "Ogre") mode = 2;
+        if (name === "Diplomacy" && char.race === "Ogre") mode = 2;
         if (name === "Medicine" && char.equipment && char.equipment.head === "Beak Mask") mode = 2;
         if (char.equipment && char.equipment.head === "Cap and Bells") {
           if (name === "Performance") mode = 2;
@@ -979,7 +979,7 @@ window.BB_CHARACTER_SHEET = (() => {
         let displayAttr = sk.attr;
         let displayName = sk.name;
         
-        if (sk.name === "Diplomacy" && char.ancestry === "Ogre") {
+        if (sk.name === "Diplomacy" && char.race === "Ogre") {
           displayAttr = "Lck";
         }
         
@@ -3500,7 +3500,7 @@ window.BB_CHARACTER_SHEET = (() => {
         let advantageMode = 0;
         
         // Ogre Ancestry (Advantage Die on Diplomacy)
-        if (name === "Diplomacy" && char.ancestry === "Ogre") {
+        if (name === "Diplomacy" && char.race === "Ogre") {
           advantageMode = 2; // Advantage Die
         }
         
@@ -4310,7 +4310,7 @@ window.BB_CHARACTER_SHEET = (() => {
         let hasRestful = char.talents && char.talents.includes("Restful");
         let extraMod = hasRestful ? 1 : 0;
         let extraBreakdown = hasRestful ? " + 1 (Restful)" : "";
-        let advMode = char.ancestry === "Troll" ? 1 : 0;
+        let advMode = char.race === "Troll" ? 1 : 0;
         
         let label = `${titlePrefix} (${poolName})`;
         
