@@ -1794,11 +1794,12 @@ window.BB_CHARACTER_SHEET = (() => {
             badgeColor = classColors[cls];
           }
           const tagBadge = spell.tag ? `<span class="card-tag tag-badge" style="background: var(--arcane-purple, #9b59b6);">${spell.tag}</span>` : '';
+          const actionTypeBadge = spell.actionType ? `<div class="card-tag" style="background: ${spell.actionType === 'Spell' ? 'var(--mana-blue)' : 'var(--stamina-gold)'};">${spell.actionType.toUpperCase()}</div>` : '';
           const tooltipHtml = window.BB_COMPENDIUM && window.BB_COMPENDIUM.generateDetailHTML ? window.BB_COMPENDIUM.generateDetailHTML({ ...spell, category: 'spell' }).replace(/"/g, '&quot;') : '';
 
           spellsListHTML += `
             <div class="compendium-card glass" style="position:relative; margin-bottom:12px; display:flex; flex-direction:column;">
-              <div class="card-tag-row">${tagBadge}<div class="card-tag" style="background: ${badgeColor}">${spell.class || 'SPELL'}</div></div>
+              <div class="card-tag-row">${tagBadge}${actionTypeBadge}<div class="card-tag" style="background: ${badgeColor}">${spell.class || 'SPELL'}</div></div>
               <h3 class="card-title info-tooltip-trigger spell-cast-btn" data-html="${tooltipHtml}" data-id="${spellId}" data-cast-type="base" style="cursor: pointer; text-decoration: underline dotted; transition: color 0.2s;" onmouseover="this.style.color='var(--amber)'" onmouseout="this.style.color=''"> ${spell.name}</h3>
               <div class="card-meta" style="margin-bottom:8px;">Attunement: ${spell.attunement || 0} | Cost: ${spell.cost} | Activation: ${spell.actTime} | Range: ${spell.range} | Components: ${spell.components} | Duration: ${spell.duration}</div>
               <p class="card-description" style="margin-bottom:12px;">${spell.description}</p>
@@ -3388,7 +3389,8 @@ window.BB_CHARACTER_SHEET = (() => {
             
             window.BB_STATE.saveCharacter(char);
             if (window.BB_DICE && window.BB_DICE.showToastNotification) {
-              window.BB_DICE.showToastNotification(`Cast ${spell.name}${castType === 'overcharge' ? ' (Overcharged)' : ''}! Used ${totalCost} ${poolName}.`);
+              let verb = spell.actionType === 'Ability' ? 'Performed' : 'Cast';
+              window.BB_DICE.showToastNotification(`${verb} ${spell.name}${castType === 'overcharge' ? ' (Overcharged)' : ''}! Used ${totalCost} ${poolName}.`);
             }
             render();
           }

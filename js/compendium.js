@@ -370,8 +370,9 @@ console.log('Compendium script loaded');
       if (res.category === 'talent') { badgeColor = 'var(--stamina-gold)'; typeLabel = 'TALENT'; }
       const tagBadge = (res.category === 'spell' && res.tag) ? `<span class="card-tag tag-badge" style="background: var(--arcane-purple, #9b59b6);">${res.tag}</span>` : '';
       const spellTypeBadge = (res.category === 'spell' && res.type) ? `<div class="card-tag" style="background: ${getTypeColor(res.type)};">${res.type.charAt(0).toUpperCase() + res.type.slice(1).toLowerCase()}</div>` : '';
+      const actionTypeBadge = (res.category === 'spell' && res.actionType) ? `<div class="card-tag" style="background: ${res.actionType === 'Spell' ? 'var(--mana-blue)' : 'var(--stamina-gold)'};">${res.actionType.toUpperCase()}</div>` : '';
       card.innerHTML = `
-        <div class="card-tag-row">${tagBadge}${spellTypeBadge}${itemTypeBadge}<div class="card-tag" style="background: ${badgeColor}">${typeLabel}</div></div>
+        <div class="card-tag-row">${tagBadge}${actionTypeBadge}${spellTypeBadge}${itemTypeBadge}<div class="card-tag" style="background: ${badgeColor}">${typeLabel}</div></div>
         <h3 class="card-title">${res.name}</h3>
           <div class="card-meta">${res.category === 'spell' ? `${res.type ? `Type: ${res.type} | ` : ''}Cost: ${res.cost} | Activation: ${res.actTime} | Range: ${res.range} | Components: ${res.components} | Duration: ${res.duration} | Class: ${res.class}` : res.category === 'item' ? `Rarity: ${res.rarity || 'Common'}${res.type ? ` | Type: ${res.type}` : ''}${res.training ? ` | Training: ${res.training}` : ''}${res.class ? ` | Class: ${res.class}` : ''}${res.slot ? ` | Slot: ${res.slot}` : ''}` : res.category === 'misc' ? `Type: ${res.type || 'Item'}${res.slot ? ` | Slot: ${res.slot}` : ''}` : (res.category === 'feat' || res.category === 'talent') ? `Requirement: ${res.requirement}` : `${res.cr}`}</div>
         <p class="card-description">${res.description ? res.description.substring(0, 100) + '...' : ''}</p>
@@ -390,6 +391,7 @@ console.log('Compendium script loaded');
             <h2>${item.name}</h2>
             <div class="spell-header-badges">
               ${item.tag ? `<span class="detail-badge tag-badge">${item.tag}</span>` : ''}
+              ${item.actionType ? `<span class="detail-badge" style="background: ${item.actionType === 'Spell' ? 'var(--mana-blue)' : 'var(--stamina-gold)'}; color: white;">${item.actionType.toUpperCase()}</span>` : ''}
               ${item.type ? `<span class="detail-badge" style="background: ${getTypeColor(item.type)}; color: white;">${item.type.charAt(0).toUpperCase() + item.type.slice(1).toLowerCase()}</span>` : ''}
               <span class="detail-badge class-badge">${item.class}</span>
             </div>
