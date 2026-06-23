@@ -2864,19 +2864,22 @@ window.BB_CHARACTER_SHEET = (() => {
         
         window.BB_DICE.roll("Iron Lungs", 1, die, 0, 0, 0, false, "", 0, "", false, (rollRes) => {
           let recovered = rollRes;
-          if (!char.vitals) char.vitals = { hp: 0, mp: 0, sp: 0, tempHp: 0, tempSp: 0 };
-          let maxSp = window.BB_STATE.getMaxSP(char);
+          if (!char.sp) char.sp = { current: 0, total: 0, temp: 0 };
           
-          if (char.vitals.sp >= maxSp) {
-             char.vitals.tempSp = (char.vitals.tempSp || 0) + recovered;
+          let maxSp = parseInt(char.sp.total) || 0;
+          let curSp = parseInt(char.sp.current) || 0;
+          let tempSp = parseInt(char.sp.temp) || 0;
+          
+          if (curSp >= maxSp) {
+             char.sp.temp = tempSp + recovered;
              window.BB_DICE.showToastNotification(`Iron Lungs: At max SP, gained ${recovered} Temp SP!`);
           } else {
-             let missing = maxSp - char.vitals.sp;
+             let missing = maxSp - curSp;
              let actualRecovered = Math.min(recovered, missing);
-             char.vitals.sp += actualRecovered;
+             char.sp.current = curSp + actualRecovered;
              let remainder = recovered - actualRecovered;
              if (remainder > 0) {
-               char.vitals.tempSp = (char.vitals.tempSp || 0) + remainder;
+               char.sp.temp = tempSp + remainder;
                window.BB_DICE.showToastNotification(`Iron Lungs: Recovered ${actualRecovered} SP and gained ${remainder} Temp SP!`);
              } else {
                window.BB_DICE.showToastNotification(`Iron Lungs: Recovered ${actualRecovered} SP!`);
