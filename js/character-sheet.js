@@ -1087,9 +1087,11 @@ window.BB_CHARACTER_SHEET = (() => {
           <div class="skill-item glass hover-lift info-tooltip-trigger" style="padding: 7px 8px; margin: 0; display: flex; justify-content: space-between; align-items: center; border-radius: 3px; border: 1px solid rgba(255,255,255,0.05); cursor:pointer;" data-type="skill" data-name="${sk.name}" data-label="${sk.name}" data-mod="${totalMod}" data-html="<h4>${sk.name} Breakdown</h4><p style='margin:0'>${breakdownHtml.replace(/"/g, '&quot;')}</p><hr style='border-color: rgba(255,255,255,0.1); margin: 8px 0;'><p style='font-size:0.85rem; color:#fff; margin:0;'>${(window.BB_DATABASE.SKILL_DESCRIPTIONS[sk.name] || '').replace(/"/g, '&quot;')}</p>">
             <div class="skill-label" style="display:flex; align-items:center; gap:8px; overflow:hidden;">
               <span class="skill-name" style="font-weight:bold; color:#fff; font-size:0.85rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${displayName}</span>
-              <span class="skill-attr" style="color:var(--text-light); font-size:0.65rem; white-space:nowrap;">(${displayAttr})</span>
             </div>
-            <span class="skill-mod-display" style="color:var(--amber); font-weight:bold; font-size:0.9rem; white-space:nowrap;">${skillModStr}</span>
+            <div style="display:flex; align-items:center; gap:6px;">
+              <span class="skill-attr" style="color:var(--text-light); font-size:0.65rem; white-space:nowrap;">(${displayAttr})</span>
+              <span class="skill-mod-display" style="color:var(--amber); font-weight:bold; font-size:0.9rem; white-space:nowrap;">${skillModStr}</span>
+            </div>
           </div>
         `;
       });
