@@ -73,7 +73,7 @@ window.BB_CHARACTER_SHEET = (() => {
       char.spells.forEach(spellId => {
         const spell = window.BB_DATABASE.SPELLS.find(s => s.id === spellId);
         if (spell && spell.attunement) {
-          usedAttunement += spell.attunement;
+          usedAttunement += window.BB_STATE.getSpellAttunementCost(char, spell);
         }
       });
     }
@@ -1826,7 +1826,7 @@ window.BB_CHARACTER_SHEET = (() => {
             <div class="compendium-card glass" style="position:relative; margin-bottom:12px; display:flex; flex-direction:column;">
               <div class="card-tag-row">${tagBadge}${actionTypeBadge}<div class="card-tag" style="background: ${badgeColor}">${spell.class || 'SPELL'}</div></div>
               <h3 class="card-title info-tooltip-trigger spell-cast-btn" data-html="${tooltipHtml}" data-id="${spellId}" data-cast-type="base" style="cursor: pointer; text-decoration: underline dotted; transition: color 0.2s;" onmouseover="this.style.color='var(--amber)'" onmouseout="this.style.color=''"> ${spell.name}</h3>
-              <div class="card-meta" style="margin-bottom:8px;">Attunement: ${spell.attunement || 0} | Cost: ${spell.cost} | Activation: ${spell.actTime} | Range: ${spell.range} | Components: ${spell.components} | Duration: ${spell.duration}</div>
+              <div class="card-meta" style="margin-bottom:8px;">Attunement: ${window.BB_STATE.getSpellAttunementCost(char, spell)} | Cost: ${spell.cost} | Activation: ${spell.actTime} | Range: ${spell.range} | Components: ${spell.components} | Duration: ${spell.duration}</div>
               <p class="card-description" style="margin-bottom:12px;">${spell.description}</p>
               ${spell.overchargeDesc ? `
                 <div class="spell-overcharge glass" style="background:rgba(255,255,255,0.05); padding:8px; border-radius:4px; font-size:0.85rem; border-left:3px solid ${badgeColor}; margin-bottom:12px;">
@@ -1849,7 +1849,7 @@ window.BB_CHARACTER_SHEET = (() => {
       let attuneOptions = "";
       window.BB_DATABASE.SPELLS.forEach(spell => {
         if (spell.class === char.class && !char.spells.includes(spell.id) && !Object.values(char.imbuedSpells || {}).includes(spell.id) && (!char.grantedAbilities || !char.grantedAbilities.includes(spell.id))) {
-          let req = spell.attunement || 0;
+          let req = window.BB_STATE.getSpellAttunementCost(char, spell);
           let isDisabled = req > availableAttunement;
           attuneOptions += `<option value="${spell.id}" ${isDisabled ? 'disabled' : ''}>
             ${spell.name} (Attunement: ${req}) ${isDisabled ? '- Not enough slots' : ''}
@@ -1864,7 +1864,7 @@ window.BB_CHARACTER_SHEET = (() => {
         window.BB_DATABASE.SPELLS.forEach(spell => {
           let hasManaCost = (spell.cost || "").match(/(\d+)\s*Mana/i);
           if (spell.actionType === 'Spell' && spell.class !== "Mage" && hasManaCost && !char.spells.includes(spell.id) && !Object.values(char.imbuedSpells || {}).includes(spell.id) && (!char.grantedAbilities || !char.grantedAbilities.includes(spell.id))) {
-            let req = spell.attunement || 0;
+            let req = window.BB_STATE.getSpellAttunementCost(char, spell);
             let isDisabled = req > availableAttunement || isScribing;
             let disableReason = isScribing ? '- Already Scribing' : (req > availableAttunement ? '- Not enough slots' : '');
             codexOptions += `<option value="${spell.id}" ${isDisabled ? 'disabled' : ''}>
@@ -1890,8 +1890,8 @@ window.BB_CHARACTER_SHEET = (() => {
           window.BB_DATABASE.SPELLS.forEach(spell => {
             if (spell.class !== char.class) return;
             const requiresOne = item.techniqueDesc.toLowerCase().includes("requires one attunement");
-            if (requiresOne && spell.attunement !== 1) return;
-            if (!requiresOne && !spell.attunement) return; // Must have an attunement cost
+            if (requiresOne && window.BB_STATE.getSpellAttunementCost(char, spell) !== 1) return;
+            if (!requiresOne && !window.BB_STATE.getSpellAttunementCost(char, spell)) return; // Must have an attunement cost
             if (filterType) {
                 const spellStr = JSON.stringify(spell).toLowerCase();
                 if (!spellStr.includes(filterType)) return;
@@ -3597,12 +3597,12 @@ window.BB_CHARACTER_SHEET = (() => {
 
         const spellData = window.BB_DATABASE.SPELLS.find(s => s.id === spellId);
         if (spellData) {
-          if (char.attunement.used + spellData.attunement > char.attunement.total) {
+          if (char.attunement.used + window.BB_STATE.getSpellAttunementCost(char, spellData) > char.attunement.total) {
             window.BB_DICE.showToastNotification("Not enough attunement slots available!");
             return;
           }
           char.spells.push(spellId);
-          char.attunement.used += spellData.attunement;
+          char.attunement.used += window.BB_STATE.getSpellAttunementCost(char, spellData);
           window.BB_STATE.saveCharacter(char);
           window.BB_DICE.showToastNotification(`Attuned to ${spellData.name}.`);
           render();
@@ -3627,7 +3627,7 @@ window.BB_CHARACTER_SHEET = (() => {
 
         const spellData = window.BB_DATABASE.SPELLS.find(s => s.id === spellId);
         if (spellData) {
-          if (char.attunement.used + spellData.attunement > char.attunement.total) {
+          if (char.attunement.used + window.BB_STATE.getSpellAttunementCost(char, spellData) > char.attunement.total) {
             if (window.BB_DICE && window.BB_DICE.showToastNotification) {
               window.BB_DICE.showToastNotification("Not enough attunement slots available!");
             }
@@ -3641,10 +3641,10 @@ window.BB_CHARACTER_SHEET = (() => {
             spellId: spellId,
             requiredRests: parseInt(match[1]),
             completedRests: 0,
-            slotCost: spellData.attunement
+            slotCost: window.BB_STATE.getSpellAttunementCost(char, spellData)
           };
 
-          char.attunement.used += spellData.attunement;
+          char.attunement.used += window.BB_STATE.getSpellAttunementCost(char, spellData);
           window.BB_STATE.saveCharacter(char);
           
           if (window.BB_DICE && window.BB_DICE.showToastNotification) {
@@ -3674,7 +3674,7 @@ window.BB_CHARACTER_SHEET = (() => {
         const spellData = window.BB_DATABASE.SPELLS.find(s => s.id === spellId);
         if (spellData) {
           char.spells = char.spells.filter(id => id !== spellId);
-          char.attunement.used = Math.max(0, char.attunement.used - spellData.attunement);
+          char.attunement.used = Math.max(0, char.attunement.used - window.BB_STATE.getSpellAttunementCost(char, spellData));
           window.BB_STATE.saveCharacter(char);
           window.BB_DICE.showToastNotification(`Unattuned from ${spellData.name}.`);
           render();
@@ -4512,7 +4512,7 @@ window.BB_CHARACTER_SHEET = (() => {
             const item = dbArray.find(i => i.name === name);
             if (item) {
               let meta = "";
-              if (type === "spell") meta = `Attunement: ${item.attunement} | Cost: ${item.cost} | Range: ${item.range}`;
+              if (type === "spell") meta = `Attunement: ${window.BB_STATE.getSpellAttunementCost(char, item)} | Cost: ${item.cost} | Range: ${item.range}`;
               if (type === "feat" || type === "talent") meta = `Requirement: ${item.requirement}`;
               
               tooltip.innerHTML = `

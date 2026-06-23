@@ -160,9 +160,23 @@ window.BB_STATE = (() => {
     return Math.floor((statValue - 10) / 2);
   }
 
-  function getModifierString(statValue) {
-    const mod = getModifier(statValue);
+  function getModifierString(val) {
+    const mod = getModifier(val);
     return mod >= 0 ? `+${mod}` : `${mod}`;
+  }
+
+  function getSpellAttunementCost(char, spell) {
+    if (!spell || typeof spell.attunement !== "number") return 0;
+    let cost = spell.attunement;
+
+    // Occultist Level 3: Malediction
+    if (char && char.class === "Occultist" && char.level >= 3) {
+      if (spell.duration && typeof spell.duration === "string" && spell.duration.toLowerCase().includes("curse")) {
+        cost = Math.max(1, cost - 1);
+      }
+    }
+
+    return cost;
   }
 
   function getComputedStat(char, statKey) {
@@ -535,6 +549,7 @@ window.BB_STATE = (() => {
     getModifierString,
     getComputedStat,
     getStatBreakdown,
+    getSpellAttunementCost,
     getSavedCharacters: () => savedCharacters,
     getActiveCharacter: () => activeCharacter,
     getDiceLog: () => diceLog,
