@@ -1832,11 +1832,11 @@ window.BB_CHARACTER_SHEET = (() => {
         }
       });
 
-      // Codex choices (all spells in the game, actionType === 'Spell')
+      // Codex choices (all spells in the game, actionType === 'Spell', excluding Mage spells)
       let codexOptions = "";
       if (char.class === "Mage") {
         window.BB_DATABASE.SPELLS.forEach(spell => {
-          if (spell.actionType === 'Spell' && !char.spells.includes(spell.id) && !Object.values(char.imbuedSpells || {}).includes(spell.id) && (!char.grantedAbilities || !char.grantedAbilities.includes(spell.id))) {
+          if (spell.actionType === 'Spell' && spell.class !== "Mage" && !char.spells.includes(spell.id) && !Object.values(char.imbuedSpells || {}).includes(spell.id) && (!char.grantedAbilities || !char.grantedAbilities.includes(spell.id))) {
             let req = spell.attunement || 0;
             let isDisabled = req > availableAttunement;
             codexOptions += `<option value="${spell.id}" ${isDisabled ? 'disabled' : ''}>
