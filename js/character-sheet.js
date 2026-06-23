@@ -1477,7 +1477,7 @@ window.BB_CHARACTER_SHEET = (() => {
               </div>
             </div>
 
-            <div class="card combat-stats-card glass" style="flex:1; padding:15px; margin:0;">
+            <div class="card combat-stats-card glass" style="flex-shrink:0; padding:15px; margin:0;">
               <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; border-bottom:1px solid rgba(255,193,7,0.3); padding-bottom:8px;">
                 <h3 class="card-header-sm" style="margin:0; border:none; padding:0; display:flex; align-items:center; gap:10px;">
                   Combat
