@@ -1569,6 +1569,7 @@ window.BB_CHARACTER_SHEET = (() => {
                     let mightyPenalty = "";
                     if (item && item.grip === "Double" && (!item.properties || !item.properties.includes("Ranged")) && char.stances && char.stances.includes("Mighty Stance")) {
                         item = JSON.parse(JSON.stringify(item));
+                        item.originalGrip = "Double";
                         item.grip = "Single";
                         mightyPenalty = "(Reach -5ft) ";
                     }
@@ -1724,7 +1725,7 @@ window.BB_CHARACTER_SHEET = (() => {
                         qtyStr = ` <span style="color:#ef4444; font-size:0.75rem; margin-left:4px;">(Ammo: ${totalQty})</span>`;
                       }
 
-                      attacksHtml += `<button class="btn btn-secondary attack-roll-btn" data-slot="${slot}" data-grip="${isImprovised ? '' : (item.grip || '')}" data-label="Damage: ${labelPrefix}${item.name}" data-count="${count}" data-type="${type}" data-mod="${modVal}" data-base-crit="${baseCritRange}" data-crit-bonus="${critBonus}" data-max-crit="${maxCritCap}" data-bowmens="${bowmensBonus}" data-ammo="${ammoName || ''}" data-extradice="${extraDiceConfig || ''}" style="display:flex; justify-content:space-between; align-items:center; width:100%; padding:8px 12px; font-family:var(--font-mono); font-size:0.85rem; text-align:left; border:1px solid rgba(255,255,255,0.1); background:rgba(0,0,0,0.3); cursor:pointer;" title="${titleStr}"><span>${labelPrefix}${item.name}${qtyStr} <span style="color:#fff; font-size:0.75rem;">(${displaySlot})</span></span><span style="color:var(--amber); display:flex; align-items:center;">${count}d${type}${modDisplay} ${item.damageType || ""}${statDisplay}${extraDmgLabel}${finesseSelect}</span></button>`;
+                      attacksHtml += `<button class="btn btn-secondary attack-roll-btn" data-slot="${slot}" data-grip="${isImprovised ? '' : (item.originalGrip || item.grip || '')}" data-label="Damage: ${labelPrefix}${item.name}" data-count="${count}" data-type="${type}" data-mod="${modVal}" data-base-crit="${baseCritRange}" data-crit-bonus="${critBonus}" data-max-crit="${maxCritCap}" data-bowmens="${bowmensBonus}" data-ammo="${ammoName || ''}" data-extradice="${extraDiceConfig || ''}" style="display:flex; justify-content:space-between; align-items:center; width:100%; padding:8px 12px; font-family:var(--font-mono); font-size:0.85rem; text-align:left; border:1px solid rgba(255,255,255,0.1); background:rgba(0,0,0,0.3); cursor:pointer;" title="${titleStr}"><span>${labelPrefix}${item.name}${qtyStr} <span style="color:#fff; font-size:0.75rem;">(${displaySlot})</span></span><span style="color:var(--amber); display:flex; align-items:center;">${count}d${type}${modDisplay} ${item.damageType || ""}${statDisplay}${extraDmgLabel}${finesseSelect}</span></button>`;
                     }
                   }
 

@@ -216,7 +216,7 @@ window.BB_DICE = (() => {
 
         const rollSingleDie = () => {
           let val = Math.floor(Math.random() * dieType) + 1;
-          if (grip === "Double" && (val === 1 || val === 2)) {
+          while (grip === "Double" && (val === 1 || val === 2)) {
             val = Math.floor(Math.random() * dieType) + 1;
           }
           return val;
