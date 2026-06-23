@@ -1586,6 +1586,7 @@ window.BB_BUILDER = (() => {
       characterStory: builder.characterStory || { origins: "", motivation: "", allies: "", rivals: "", affiliations: "", notes: "" },
       level: 1,
       xp: 0,
+      isNew: true,
       hp: { current: hpVal, total: hpVal, temp: 0 },
       mp: { current: mpVal, total: mpVal },
       sp: { current: spVal, total: spVal },

@@ -176,6 +176,16 @@ window.BB_CHARACTER_SHEET = (() => {
     if (char.talents && char.talents.includes("Vigor")) char.sp.total += dexMod;
     if (char.equipment && Object.values(char.equipment).includes("Rabbit's Amulet")) char.sp.total += 5;
 
+    if (char.isNew) {
+      char.hp.current = char.hp.total;
+      char.mp.current = char.mp.total;
+      char.sp.current = char.sp.total;
+      delete char.isNew;
+      if (window.BB_STATE && window.BB_STATE.saveCharacter) {
+        window.BB_STATE.saveCharacter(char);
+      }
+    }
+
     char.critBonus = 0;
     if (char.equipment && Object.values(char.equipment).includes("Fox's Amulet")) char.critBonus += 1;
 
