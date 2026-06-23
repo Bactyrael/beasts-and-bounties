@@ -1380,11 +1380,22 @@ window.BB_CHARACTER_SHEET = (() => {
                     }
                     headerExtras += `</div>`;
                     if (headerExtras === `<div style="display:flex; gap:5px;"></div>`) headerExtras = "";
-                } else if (char.class === "Vanguard" && char.level >= 4) {
-                    let ilUses = (char.trackers && char.trackers["Iron Lungs"] !== undefined) ? char.trackers["Iron Lungs"] : 1;
-                    let ilDisabled = ilUses <= 0 ? "disabled" : "";
-                    let ilStyle = ilDisabled ? "opacity:0.5; cursor:not-allowed;" : "";
-                    headerExtras = `<button class="btn btn-xs btn-primary btn-iron-lungs" style="padding:2px 8px; font-size:0.75rem; display:flex; align-items:center; gap:5px; ${ilStyle}" title="Roll a die based on Dex to regain Stamina. If at max, gain Temp Stamina. Once per Long Rest." ${ilDisabled}><i class="fas fa-lungs"></i> Iron Lungs</button>`;
+                } else if (char.class === "Vanguard") {
+                    headerExtras = `<div style="display:flex; gap:5px;">`;
+                    if (char.level >= 4) {
+                        let ilUses = (char.trackers && char.trackers["Iron Lungs"] !== undefined) ? char.trackers["Iron Lungs"] : 1;
+                        let ilDisabled = ilUses <= 0 ? "disabled" : "";
+                        let ilStyle = ilDisabled ? "opacity:0.5; cursor:not-allowed;" : "";
+                        headerExtras += `<button class="btn btn-xs btn-primary btn-iron-lungs" style="padding:2px 8px; font-size:0.75rem; display:flex; align-items:center; gap:5px; ${ilStyle}" title="Roll a die based on Dex to regain Stamina. If at max, gain Temp Stamina. Once per Long Rest." ${ilDisabled}><i class="fas fa-lungs"></i> Iron Lungs</button>`;
+                    }
+                    if (char.level >= 2) {
+                        let exUses = (char.trackers && char.trackers["Exhilaration"] !== undefined) ? char.trackers["Exhilaration"] : 2;
+                        let exDisabled = exUses <= 0 ? "disabled" : "";
+                        let exStyle = exDisabled ? "opacity:0.5; cursor:not-allowed;" : "";
+                        headerExtras += `<button class="btn btn-xs btn-danger btn-exhilaration" style="padding:2px 8px; font-size:0.75rem; display:flex; align-items:center; gap:5px; background:var(--hp-red); border-color:var(--hp-red); color:#fff; ${exStyle}" title="As a bonus action, regain HP equal to Exhilaration Die + Vanguard level." ${exDisabled}>🫀 Exhilaration</button>`;
+                    }
+                    headerExtras += `</div>`;
+                    if (headerExtras === `<div style="display:flex; gap:5px;"></div>`) headerExtras = "";
                 }
 
                 const hasTrackers = char.availableTrackers && char.availableTrackers.length > 0;
