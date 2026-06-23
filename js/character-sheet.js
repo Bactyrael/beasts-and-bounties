@@ -3052,6 +3052,14 @@ window.BB_CHARACTER_SHEET = (() => {
       rollDeathSaveBtn.addEventListener("click", () => {
         if (!char.deathSaves) char.deathSaves = { successes: 0, failures: 0 };
 
+        if (char.class === "Vanguard" && char.level >= 10 && char.deathSaves.successes === 0 && char.deathSaves.failures === 0) {
+          char.deathSaves.successes = 1;
+          window.BB_DICE.showToastNotification("Defiance of Death: Automatic Death Save Success!");
+          window.BB_STATE.saveCharacter(char);
+          if (window.BB_APP && window.BB_APP.renderActiveTab) window.BB_APP.renderActiveTab();
+          return;
+        }
+
         const evaluateRoll = (roll, isReroll = false) => {
           let message = `Rolled a ${roll} for Death Saving Throw. `;
 
