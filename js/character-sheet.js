@@ -1832,6 +1832,20 @@ window.BB_CHARACTER_SHEET = (() => {
         }
       });
 
+      // Codex choices (all spells in the game, actionType === 'Spell')
+      let codexOptions = "";
+      if (char.class === "Mage") {
+        window.BB_DATABASE.SPELLS.forEach(spell => {
+          if (spell.actionType === 'Spell' && !char.spells.includes(spell.id) && !Object.values(char.imbuedSpells || {}).includes(spell.id) && (!char.grantedAbilities || !char.grantedAbilities.includes(spell.id))) {
+            let req = spell.attunement || 0;
+            let isDisabled = req > availableAttunement;
+            codexOptions += `<option value="${spell.id}" ${isDisabled ? 'disabled' : ''}>
+              ${spell.name} [${spell.class}] (Attunement: ${req}) ${isDisabled ? '- Not enough slots' : ''}
+            </option>`;
+          }
+        });
+      }
+
       let imbueSectionHTML = "";
       char.imbuedSpells = char.imbuedSpells || {};
 
@@ -1908,6 +1922,7 @@ window.BB_CHARACTER_SHEET = (() => {
             <div class="attune-controls">
               <select id="codex-attune-selector" class="form-control inline-select info-tooltip-trigger" data-type="spell">
                 <option value="">Choose Spell</option>
+                ${codexOptions}
               </select>
               <button class="btn btn-primary" id="btn-codex-attune">Scribe</button>
             </div>
