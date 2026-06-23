@@ -225,7 +225,7 @@ window.BB_STATE = (() => {
     if (char.class === "Herald" && char.level >= 10) {
       if (statKey === "Dex" || statKey === "Lck") classBonus += 4;
     }
-    if (char.class === "Ranger" && char.level >= 10) {
+    if (char.class === "Tracker" && char.level >= 10) {
       if (statKey === "Str" || statKey === "Dex" || statKey === "Wis") classBonus += 2;
     }
     if (char.class === "Occultist" && char.level >= 10) {
