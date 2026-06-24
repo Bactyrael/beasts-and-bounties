@@ -1704,7 +1704,7 @@ window.BB_CHARACTER_SHEET = (() => {
                     }
                   }
 
-                  if (!hasWeaponEquipped || char.class === "Disciple") {
+                  if (true) {
                     let strMod = window.BB_STATE.getModifier(window.BB_STATE.getComputedStat(char, "Str"));
                     let modToUse = strMod;
                     let statLabel = "STR";
