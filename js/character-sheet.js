@@ -1360,8 +1360,6 @@ window.BB_CHARACTER_SHEET = (() => {
                   else if (char.level >= 8) diceType = "d10";
                   else if (char.level >= 6) diceType = "d12";
                   headerExtras = `<button class="btn btn-xs btn-primary inline-roll-btn" data-roll="1${diceType}" data-label="Arcane Instability" style="padding:2px 8px; font-size:0.75rem; display:flex; align-items:center; gap:5px;"><i class="fas fa-dice-d20"></i> Instability (${diceType})</button>`;
-                } else if (char.class === "Berserker") {
-                  headerExtras = `<button class="btn btn-xs btn-danger btn-berserk" style="padding:2px 8px; font-size:0.75rem; display:flex; align-items:center; gap:5px;"><i class="fas fa-fire"></i> Berserk</button>`;
                 } else if (char.class === "Vanguard") {
                     headerExtras = "";
 
@@ -1428,6 +1426,10 @@ window.BB_CHARACTER_SHEET = (() => {
                         let dbDisabled = currentVal <= 0 ? "disabled" : "";
                         let dbStyle = dbDisabled ? "opacity:0.5; cursor:not-allowed;" : "";
                         nameHtml = `<button class="btn btn-xs btn-danger btn-dark-bargain" style="padding:2px 8px; font-size:0.75rem; display:flex; align-items:center; gap:5px; background:#630214; border:1px solid #9c0a25; color:#ffffff; ${dbStyle}" title="Exchange HP equal to your level for the same amount of MP. Reduces HP to 1 if not enough." ${dbDisabled}><i class="fas fa-tint" style="color:#ef4444;"></i> Dark Bargain</button>`;
+                      } else if (tracker.name === "Berserk Charges") {
+                        let berserkDisabled = currentVal <= 0 ? "disabled" : "";
+                        let berserkStyle = berserkDisabled ? "opacity:0.5; cursor:not-allowed;" : "";
+                        nameHtml = `<button class="btn btn-xs btn-danger btn-berserk" style="padding:2px 8px; font-size:0.75rem; display:flex; align-items:center; gap:5px; ${berserkStyle}" ${berserkDisabled}><i class="fas fa-fire"></i> Berserk</button>`;
                       }
 
                       trackersHtml += `<div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:5px;">
