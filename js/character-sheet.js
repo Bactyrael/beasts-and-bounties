@@ -1671,7 +1671,7 @@ window.BB_CHARACTER_SHEET = (() => {
 
                       let extraDmgLabel = "";
                       let extraDiceConfig = null;
-                      if (char.class === "Justicar" && char.level >= 5 && item.type !== "Bow" && item.type !== "Throwing") {
+                      if (char.class === "Justicar" && char.level >= 5 && slot === "mainHand" && item.type !== "Bow" && item.type !== "Throwing") {
                         if (char.level >= 10) {
                           extraDmgLabel = ` <span style="color:#a855f7; font-size:0.8rem; margin-left:4px;" title="Ascendency: +2d8 Magic">+ 2d8 Magic</span>`;
                           extraDiceConfig = "2,8,Magic";
