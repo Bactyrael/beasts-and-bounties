@@ -305,7 +305,7 @@ window.BB_DICE = (() => {
         }
 
         if (hasCrit) {
-          criticalBonus = rollSingleDie();
+          criticalBonus = Math.floor(Math.random() * dieType) + 1;
           rollSum += criticalBonus;
           
           virtualDice.forEach(el => {
