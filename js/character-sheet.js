@@ -1362,20 +1362,6 @@ window.BB_CHARACTER_SHEET = (() => {
                   headerExtras = `<button class="btn btn-xs btn-primary inline-roll-btn" data-roll="1${diceType}" data-label="Arcane Instability" style="padding:2px 8px; font-size:0.75rem; display:flex; align-items:center; gap:5px;"><i class="fas fa-dice-d20"></i> Instability (${diceType})</button>`;
                 } else if (char.class === "Berserker") {
                   headerExtras = `<button class="btn btn-xs btn-danger btn-berserk" style="padding:2px 8px; font-size:0.75rem; display:flex; align-items:center; gap:5px;"><i class="fas fa-fire"></i> Berserk</button>`;
-                } else if (char.class === "Mage") {
-                    headerExtras = `<div style="display:flex; gap:5px;">`;
-                    if (char.level >= 4) {
-                      let medDisabled = (char.trackers && char.trackers["studiousMeditationUsed"]) ? "disabled" : "";
-                      let medStyle = medDisabled ? "opacity:0.5; cursor:not-allowed;" : "";
-                      headerExtras += `<button class="btn btn-xs btn-primary btn-studious-meditation" style="padding:2px 8px; font-size:0.75rem; display:flex; align-items:center; gap:5px; ${medStyle}" title="Regain MP equal to Mage level + INT mod. If max, gain Temp MP instead. Once per Long Rest." ${medDisabled}><i class="fas fa-book-reader"></i> Studious Meditation</button>`;
-                    }
-                    if (char.level >= 10) {
-                      let archmageUses = (char.trackers && char.trackers["archmageUses"]) || 0;
-                      let costText = archmageUses === 0 ? "Free" : (Math.pow(2, archmageUses) + "x MP");
-                      headerExtras += `<button class="btn btn-xs btn-primary btn-archmage" style="padding:2px 8px; font-size:0.75rem; display:flex; align-items:center; gap:5px;" title="Deal max damage on an attuned damage-dealing spell. Cost doubles each use."><i class="fas fa-hat-wizard"></i> Archmage (${costText})</button>`;
-                    }
-                    headerExtras += `</div>`;
-                    if (headerExtras === `<div style="display:flex; gap:5px;"></div>`) headerExtras = "";
                 } else if (char.class === "Vanguard") {
                     headerExtras = "";
 
@@ -1430,6 +1416,14 @@ window.BB_CHARACTER_SHEET = (() => {
                         let retroDisabled = currentVal <= 0 ? "disabled" : "";
                         let retroStyle = retroDisabled ? "opacity:0.5; cursor:not-allowed;" : "";
                         nameHtml = `<button class="btn btn-xs btn-primary btn-retrograde" style="padding:2px 8px; font-size:0.75rem; display:flex; align-items:center; gap:5px; ${retroStyle}" title="Recover Covenant uses equal to half your Justicar level (rounded up) - Once per Long Rest" ${retroDisabled}><i class="fas fa-undo"></i> In Retrograde</button>`;
+                      } else if (tracker.name === "Studious Meditation") {
+                        let medDisabled = currentVal <= 0 ? "disabled" : "";
+                        let medStyle = medDisabled ? "opacity:0.5; cursor:not-allowed;" : "";
+                        nameHtml = `<button class="btn btn-xs btn-primary btn-studious-meditation" style="padding:2px 8px; font-size:0.75rem; display:flex; align-items:center; gap:5px; ${medStyle}" title="Regain MP equal to Mage level + INT mod. If max, gain Temp MP instead. Once per Long Rest." ${medDisabled}><i class="fas fa-book-reader"></i> Studious Meditation</button>`;
+                      } else if (tracker.name === "Archmage Uses") {
+                        let archmageUses = (char.trackers && char.trackers["archmageUses"]) || 0;
+                        let costText = archmageUses === 0 ? "Free" : (Math.pow(2, archmageUses) + "x MP");
+                        nameHtml = `<button class="btn btn-xs btn-primary btn-archmage" style="padding:2px 8px; font-size:0.75rem; display:flex; align-items:center; gap:5px;" title="Deal max damage on an attuned damage-dealing spell. Cost doubles each use."><i class="fas fa-hat-wizard"></i> Archmage (${costText})</button>`;
                       }
 
                       trackersHtml += `<div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:5px;">
@@ -2875,7 +2869,8 @@ window.BB_CHARACTER_SHEET = (() => {
     document.querySelectorAll(".btn-studious-meditation").forEach(btn => {
       btn.addEventListener("click", () => {
         char.trackers = char.trackers || {};
-        if (char.trackers["studiousMeditationUsed"]) return;
+        let currentMed = char.trackers["Studious Meditation"] !== undefined ? char.trackers["Studious Meditation"] : 1;
+        if (currentMed <= 0) return;
 
         const intMod = window.BB_STATE.getModifier(window.BB_STATE.getComputedStat(char, "Int"));
         const amount = char.level + intMod;
@@ -2888,7 +2883,7 @@ window.BB_CHARACTER_SHEET = (() => {
           window.BB_DICE.showToastNotification(`Studious Meditation: Regained ${amount} MP.`);
         }
         
-        char.trackers["studiousMeditationUsed"] = true;
+        char.trackers["Studious Meditation"] = 0;
         window.BB_STATE.saveCharacter(char);
         render();
       });
@@ -4739,7 +4734,6 @@ window.BB_CHARACTER_SHEET = (() => {
     if (longRestBtn) {
       longRestBtn.addEventListener("click", () => {
         if (char.trackers) {
-          if (char.trackers["studiousMeditationUsed"]) delete char.trackers["studiousMeditationUsed"];
           if (char.trackers["archmageFreeUseUsed"]) delete char.trackers["archmageFreeUseUsed"];
           if (char.trackers["archmageUses"]) delete char.trackers["archmageUses"];
         }
