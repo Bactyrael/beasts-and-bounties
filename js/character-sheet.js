@@ -1542,7 +1542,10 @@ window.BB_CHARACTER_SHEET = (() => {
                     if (slot === 'offHand' && char.equipment.mainHand) {
                         const mainHandItem = ((window.BB_DATABASE.ITEMS || []).concat(window.BB_DATABASE.MISC_ITEMS || [])).find(i => i.name === char.equipment.mainHand);
                         if (mainHandItem && ["Double", "Colossal"].includes(mainHandItem.grip)) {
-                            continue;
+                            let isMighty = mainHandItem.grip === "Double" && (!mainHandItem.properties || !mainHandItem.properties.includes("Ranged")) && char.stances && char.stances.includes("Mighty Stance");
+                            if (!isMighty) {
+                                continue;
+                            }
                         }
                         // Dual grip bonus action attack requires two Dual grip weapons
                         if (item && item.grip === "Dual" && mainHandItem && mainHandItem.grip !== "Dual") {
@@ -2402,8 +2405,11 @@ window.BB_CHARACTER_SHEET = (() => {
     if (label === "Off Hand" && char.equipment && char.equipment.mainHand) {
       const mainHandItem = ((window.BB_DATABASE.ITEMS || []).concat(window.BB_DATABASE.MISC_ITEMS || [])).find(i => i.name === char.equipment.mainHand);
       if (mainHandItem && ["Double", "Colossal"].includes(mainHandItem.grip)) {
-        isDisabled = true;
-        disabledReason = `Disabled by ${mainHandItem.grip} weapon in Main Hand`;
+        let isMighty = mainHandItem.grip === "Double" && (!mainHandItem.properties || !mainHandItem.properties.includes("Ranged")) && char.stances && char.stances.includes("Mighty Stance");
+        if (!isMighty) {
+          isDisabled = true;
+          disabledReason = `Disabled by ${mainHandItem.grip} weapon in Main Hand`;
+        }
       }
     }
 
