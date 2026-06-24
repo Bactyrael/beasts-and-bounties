@@ -3087,6 +3087,36 @@ window.BB_CHARACTER_SHEET = (() => {
         let index = parseInt(e.target.getAttribute("data-index"));
         char.stances = char.stances || [];
         char.stances[index] = e.target.value;
+        
+        if (char.equipment && char.equipment.mainHand && char.equipment.offHand) {
+          const mainHandItem = ((window.BB_DATABASE.ITEMS || []).concat(window.BB_DATABASE.MISC_ITEMS || [])).find(i => i.name === char.equipment.mainHand);
+          if (mainHandItem && ["Single", "Double", "Colossal"].includes(mainHandItem.grip)) {
+            let forceUnequip = false;
+            if (["Double", "Colossal"].includes(mainHandItem.grip)) {
+              forceUnequip = true;
+              let isMighty = mainHandItem.grip === "Double" && (!mainHandItem.properties || !mainHandItem.properties.includes("Ranged")) && char.stances.includes("Mighty Stance");
+              if (isMighty) {
+                forceUnequip = false;
+                const offHandItemData = ((window.BB_DATABASE.ITEMS || []).concat(window.BB_DATABASE.MISC_ITEMS || [])).find(i => i.name === char.equipment.offHand);
+                if (offHandItemData && offHandItemData.slot === "Weapon") {
+                  forceUnequip = true;
+                }
+              }
+            } else if (mainHandItem.grip === "Single") {
+              const offHandItemData = ((window.BB_DATABASE.ITEMS || []).concat(window.BB_DATABASE.MISC_ITEMS || [])).find(i => i.name === char.equipment.offHand);
+              if (offHandItemData && offHandItemData.slot === "Weapon") {
+                forceUnequip = true;
+              }
+            }
+            if (forceUnequip) {
+              char.equipment.offHand = "";
+              if (char.imbuedSpells && char.imbuedSpells.offHand) {
+                delete char.imbuedSpells.offHand;
+              }
+            }
+          }
+        }
+
         window.BB_STATE.saveCharacter(char);
         render();
       });
