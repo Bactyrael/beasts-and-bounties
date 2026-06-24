@@ -1383,8 +1383,9 @@ window.BB_CHARACTER_SHEET = (() => {
                 } else if (char.class === "Vanguard") {
                     headerExtras = "";
 
-                    let numStances = char.level >= 8 ? 2 : 1;
+                    let numStances = 1;
                     char.stances = char.stances || [];
+                    if (char.stances.length > 1) char.stances = char.stances.slice(0, 1);
                     let stanceHtml = `<div style="display:flex; gap:5px; margin-top:5px; align-items:center;">
                         <span style="font-size:0.75rem; color:var(--amber);">Stances:</span>`;
                     for (let i = 0; i < numStances; i++) {
