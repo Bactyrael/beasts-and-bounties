@@ -1424,6 +1424,10 @@ window.BB_CHARACTER_SHEET = (() => {
                         let archmageUses = (char.trackers && char.trackers["archmageUses"]) || 0;
                         let costText = archmageUses === 0 ? "Free" : (Math.pow(2, archmageUses) + "x MP");
                         nameHtml = `<button class="btn btn-xs btn-primary btn-archmage" style="padding:2px 8px; font-size:0.75rem; display:flex; align-items:center; gap:5px;" title="Deal max damage on an attuned damage-dealing spell. Cost doubles each use."><i class="fas fa-hat-wizard"></i> Archmage (${costText})</button>`;
+                      } else if (tracker.name === "Dark Bargain Uses") {
+                        let dbDisabled = currentVal <= 0 ? "disabled" : "";
+                        let dbStyle = dbDisabled ? "opacity:0.5; cursor:not-allowed;" : "";
+                        nameHtml = `<button class="btn btn-xs btn-danger btn-dark-bargain" style="padding:2px 8px; font-size:0.75rem; display:flex; align-items:center; gap:5px; background:#630214; border:1px solid #9c0a25; color:#ffffff; ${dbStyle}" title="Exchange HP equal to your level for the same amount of MP. Reduces HP to 1 if not enough." ${dbDisabled}><i class="fas fa-tint" style="color:#ef4444;"></i> Dark Bargain</button>`;
                       }
 
                       trackersHtml += `<div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:5px;">
@@ -2875,16 +2879,55 @@ window.BB_CHARACTER_SHEET = (() => {
         const intMod = window.BB_STATE.getModifier(window.BB_STATE.getComputedStat(char, "Int"));
         const amount = char.level + intMod;
 
-        if (char.mp.current >= char.mp.total) {
-          char.mp.temp = (char.mp.temp || 0) + amount;
+        let currentMp = char.mp ? (parseInt(char.mp.current) || 0) : 0;
+        let maxMp = char.mp ? (parseInt(char.mp.total) || 0) : 0;
+        let tempMp = char.mp ? (parseInt(char.mp.temp) || 0) : 0;
+
+        if (currentMp >= maxMp) {
+          if (!char.mp) char.mp = { current: maxMp, total: maxMp, temp: 0 };
+          char.mp.temp = tempMp + amount;
           window.BB_DICE.showToastNotification(`Studious Meditation: Gained ${amount} Temporary MP.`);
         } else {
-          char.mp.current = Math.min(char.mp.total, char.mp.current + amount);
-          window.BB_DICE.showToastNotification(`Studious Meditation: Regained ${amount} MP.`);
+          let missingMp = maxMp - currentMp;
+          let recoverAmount = Math.min(amount, missingMp);
+          char.mp.current = currentMp + recoverAmount;
+          window.BB_DICE.showToastNotification(`Studious Meditation: Regained ${recoverAmount} MP.`);
         }
         
         char.trackers["Studious Meditation"] = 0;
         window.BB_STATE.saveCharacter(char);
+        render();
+      });
+    });
+
+    document.querySelectorAll(".btn-dark-bargain").forEach(btn => {
+      btn.addEventListener("click", () => {
+        char.trackers = char.trackers || {};
+        let currentUses = char.trackers["Dark Bargain Uses"] !== undefined ? char.trackers["Dark Bargain Uses"] : 2;
+        if (currentUses <= 0) return;
+
+        if (!char.hp) char.hp = { current: 0, total: 0 };
+        let currentHp = parseInt(char.hp.current) || 0;
+        let charLevel = parseInt(char.level) || 1;
+        
+        let targetExchange = charLevel;
+        let exchangeAmount = Math.min(targetExchange, currentHp - 1);
+        
+        if (exchangeAmount <= 0) {
+          window.BB_DICE.showToastNotification("Not enough HP to make a Dark Bargain.");
+          return;
+        }
+
+        char.trackers["Dark Bargain Uses"] = currentUses - 1;
+        char.hp.current = currentHp - exchangeAmount;
+        
+        if (!char.mp) char.mp = { current: 0, total: 0 };
+        let currentMp = parseInt(char.mp.current) || 0;
+        let maxMp = parseInt(char.mp.total) || 0;
+        char.mp.current = Math.min(maxMp, currentMp + exchangeAmount);
+        
+        window.BB_STATE.saveCharacter(char);
+        window.BB_DICE.showToastNotification(`Dark Bargain: Sacrificed ${exchangeAmount} HP for ${exchangeAmount} MP.`);
         render();
       });
     });
