@@ -1646,22 +1646,9 @@ window.BB_CHARACTER_SHEET = (() => {
                       if (modVal < 0) modVal = 0;
                       
                       if (item.grip === "Single") {
-                        let hasOtherWeapon = false;
-                        ['mainHand', 'offHand', 'sling'].forEach(s => {
-                          if (s !== slot && char.equipment && char.equipment[s]) {
-                            const otherItem = ((window.BB_DATABASE.ITEMS || []).concat(window.BB_DATABASE.MISC_ITEMS || [])).find(i => i.name === char.equipment[s]);
-                            if (otherItem && otherItem.slot === "Weapon") {
-                              const typeStr = otherItem.type || "";
-                              if (!typeStr.includes("Shield") && !typeStr.includes("Implement") && !typeStr.includes("Focus")) {
-                                hasOtherWeapon = true;
-                              }
-                            }
-                          }
-                        });
-                        if (!hasOtherWeapon) {
-                          modVal += 2;
-                          modStat += " + Single Grip";
-                        }
+                        modVal += 2;
+                        modStat += " + Single Grip";
+                        if (maxCritCap < 2) maxCritCap = 2;
                       }
                       
                       let bowmensBonus = 0;
@@ -1684,9 +1671,7 @@ window.BB_CHARACTER_SHEET = (() => {
                       let totalCritRange = baseCritRange + critBonus;
                       
                       if (!isImprovised && item.grip === "Single" && char.talents && char.talents.includes("Unfettered")) {
-                        if (!char.equipment.offHand) {
-                          maxCritCap += 1;
-                        }
+                        maxCritCap += 1;
                       }
                       
                       let finalCritRange = Math.min(totalCritRange, maxCritCap);
@@ -2404,11 +2389,14 @@ window.BB_CHARACTER_SHEET = (() => {
     let disabledReason = "";
     if (label === "Off Hand" && char.equipment && char.equipment.mainHand) {
       const mainHandItem = ((window.BB_DATABASE.ITEMS || []).concat(window.BB_DATABASE.MISC_ITEMS || [])).find(i => i.name === char.equipment.mainHand);
-      if (mainHandItem && ["Double", "Colossal"].includes(mainHandItem.grip)) {
+      if (mainHandItem && ["Single", "Double", "Colossal"].includes(mainHandItem.grip)) {
         let isMighty = mainHandItem.grip === "Double" && (!mainHandItem.properties || !mainHandItem.properties.includes("Ranged")) && char.stances && char.stances.includes("Mighty Stance");
-        if (!isMighty) {
+        if (mainHandItem.grip !== "Single" && !isMighty) {
           isDisabled = true;
           disabledReason = `Disabled by ${mainHandItem.grip} weapon in Main Hand`;
+        } else if (mainHandItem.grip === "Single" || isMighty) {
+          isDisabled = true;
+          disabledReason = `Disabled by Single Grip weapon in Main Hand`;
         }
       }
     }
@@ -3885,16 +3873,13 @@ window.BB_CHARACTER_SHEET = (() => {
           delete char.imbuedSpells[key];
         }
 
-        // Automatically unequip offhand if equipping a 2-handed weapon
+        // Automatically unequip offhand if equipping a 2-handed weapon or Single Grip weapon
         if (key === "mainHand" && char.equipment.mainHand && char.equipment.offHand) {
           const mainHandItem = ((window.BB_DATABASE.ITEMS || []).concat(window.BB_DATABASE.MISC_ITEMS || [])).find(i => i.name === char.equipment.mainHand);
-          if (mainHandItem && ["Double", "Colossal"].includes(mainHandItem.grip)) {
+          if (mainHandItem && ["Single", "Double", "Colossal"].includes(mainHandItem.grip)) {
             let allowedByVanguard = false;
-            if (mainHandItem.grip === "Double" && (!mainHandItem.properties || !mainHandItem.properties.includes("Ranged"))) {
-              if (char.stances && char.stances.includes("Mighty Stance")) {
-                allowedByVanguard = true;
-              }
-            }
+            // Since Single grip blocks offHand, and Mighty Stance turns Double into Single, 
+            // Vanguard no longer bypasses the offHand restriction for Double either.
             if (!allowedByVanguard) {
               char.equipment.offHand = "";
               if (char.imbuedSpells && char.imbuedSpells.offHand) {
