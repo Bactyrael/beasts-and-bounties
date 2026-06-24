@@ -2388,14 +2388,11 @@ window.BB_CHARACTER_SHEET = (() => {
     let disabledReason = "";
     if (label === "Off Hand" && char.equipment && char.equipment.mainHand) {
       const mainHandItem = ((window.BB_DATABASE.ITEMS || []).concat(window.BB_DATABASE.MISC_ITEMS || [])).find(i => i.name === char.equipment.mainHand);
-      if (mainHandItem && ["Single", "Double", "Colossal"].includes(mainHandItem.grip)) {
+      if (mainHandItem && ["Double", "Colossal"].includes(mainHandItem.grip)) {
         let isMighty = mainHandItem.grip === "Double" && (!mainHandItem.properties || !mainHandItem.properties.includes("Ranged")) && char.stances && char.stances.includes("Mighty Stance");
-        if (mainHandItem.grip !== "Single" && !isMighty) {
+        if (!isMighty) {
           isDisabled = true;
           disabledReason = `Disabled by ${mainHandItem.grip} weapon in Main Hand`;
-        } else if (mainHandItem.grip === "Single" || isMighty) {
-          isDisabled = true;
-          disabledReason = `Disabled by Single Grip weapon in Main Hand`;
         }
       }
     }
@@ -2433,8 +2430,18 @@ window.BB_CHARACTER_SHEET = (() => {
           if (invItemData && (invItemData.slot === label || (invItemData.slot === "Off-hand" && label === "Off Hand") || (invItemData.slot === "Weapon" && (label === "Main Hand" || label === "Off Hand")) || (invItemData.slot === "Shield" && label === "Off Hand"))) {
             
             // Apply Off Hand grip restriction
-            if (label === "Off Hand" && invItemData.slot === "Weapon" && ["Single", "Double", "Colossal"].includes(invItemData.grip)) {
-              return; // skip this item, it can't be put in the off hand
+            if (label === "Off Hand" && invItemData.slot === "Weapon") {
+              if (["Single", "Double", "Colossal"].includes(invItemData.grip)) {
+                return; // skip this item, it can't be put in the off hand
+              }
+              // If main hand is Single Grip (or Mighty Stance converted), you cannot equip ANY weapon in the off hand
+              const mainHandItem = ((window.BB_DATABASE.ITEMS || []).concat(window.BB_DATABASE.MISC_ITEMS || [])).find(i => i.name === char.equipment.mainHand);
+              if (mainHandItem) {
+                let isMighty = mainHandItem.grip === "Double" && (!mainHandItem.properties || !mainHandItem.properties.includes("Ranged")) && char.stances && char.stances.includes("Mighty Stance");
+                if (mainHandItem.grip === "Single" || isMighty) {
+                  return; // skip all weapons if main hand is Single Grip
+                }
+              }
             }
 
             const selected = (val === itemName) ? "selected" : "";
@@ -3872,14 +3879,28 @@ window.BB_CHARACTER_SHEET = (() => {
           delete char.imbuedSpells[key];
         }
 
-        // Automatically unequip offhand if equipping a 2-handed weapon or Single Grip weapon
+        // Automatically unequip offhand if equipping a 2-handed weapon or invalid Single Grip combo
         if (key === "mainHand" && char.equipment.mainHand && char.equipment.offHand) {
           const mainHandItem = ((window.BB_DATABASE.ITEMS || []).concat(window.BB_DATABASE.MISC_ITEMS || [])).find(i => i.name === char.equipment.mainHand);
           if (mainHandItem && ["Single", "Double", "Colossal"].includes(mainHandItem.grip)) {
-            let allowedByVanguard = false;
-            // Since Single grip blocks offHand, and Mighty Stance turns Double into Single, 
-            // Vanguard no longer bypasses the offHand restriction for Double either.
-            if (!allowedByVanguard) {
+            let forceUnequip = false;
+            if (["Double", "Colossal"].includes(mainHandItem.grip)) {
+              forceUnequip = true;
+              let isMighty = mainHandItem.grip === "Double" && (!mainHandItem.properties || !mainHandItem.properties.includes("Ranged")) && char.stances && char.stances.includes("Mighty Stance");
+              if (isMighty) {
+                forceUnequip = false;
+                const offHandItemData = ((window.BB_DATABASE.ITEMS || []).concat(window.BB_DATABASE.MISC_ITEMS || [])).find(i => i.name === char.equipment.offHand);
+                if (offHandItemData && offHandItemData.slot === "Weapon") {
+                  forceUnequip = true;
+                }
+              }
+            } else if (mainHandItem.grip === "Single") {
+              const offHandItemData = ((window.BB_DATABASE.ITEMS || []).concat(window.BB_DATABASE.MISC_ITEMS || [])).find(i => i.name === char.equipment.offHand);
+              if (offHandItemData && offHandItemData.slot === "Weapon") {
+                forceUnequip = true;
+              }
+            }
+            if (forceUnequip) {
               char.equipment.offHand = "";
               if (char.imbuedSpells && char.imbuedSpells.offHand) {
                 delete char.imbuedSpells.offHand;
