@@ -1648,7 +1648,6 @@ window.BB_CHARACTER_SHEET = (() => {
                       if (item.grip === "Single") {
                         modVal += 2;
                         modStat += " + Single Grip";
-                        if (maxCritCap < 2) maxCritCap = 2;
                       }
                       
                       let bowmensBonus = 0;
