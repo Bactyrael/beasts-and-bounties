@@ -4580,9 +4580,11 @@ window.BB_CHARACTER_SHEET = (() => {
           }
         }
         // Codex Scribing Progress (Short Rest, Fast Learner)
+        // Codex Scribing Progress (Short Rest, Fast Learner)
         if (char.class === "Mage" && char.level >= 7 && char.scribingSpell && char.scribingSpell.spellId) {
-          char.scribingSpell.completedRests += 1;
+          char.scribingSpell.completedRests = (parseInt(char.scribingSpell.completedRests) || 0) + 1;
           if (char.scribingSpell.completedRests >= char.scribingSpell.requiredRests) {
+            if (!char.spells) char.spells = [];
             char.spells.push(char.scribingSpell.spellId);
             const scribedSpellName = window.BB_DATABASE.SPELLS.find(s => s.id === char.scribingSpell.spellId)?.name || "Spell";
             delete char.scribingSpell;
@@ -4592,10 +4594,13 @@ window.BB_CHARACTER_SHEET = (() => {
               }, 1500);
             }
           } else {
+            const spellId = char.scribingSpell.spellId;
+            const completed = char.scribingSpell.completedRests;
+            const required = char.scribingSpell.requiredRests;
             if (window.BB_DICE && window.BB_DICE.showToastNotification) {
               setTimeout(() => {
-                const spellName = window.BB_DATABASE.SPELLS.find(s => s.id === char.scribingSpell.spellId)?.name || "Spell";
-                window.BB_DICE.showToastNotification(`Codex: Scribing ${spellName} progress: ${char.scribingSpell.completedRests}/${char.scribingSpell.requiredRests}`);
+                const spellName = window.BB_DATABASE.SPELLS.find(s => s.id === spellId)?.name || "Spell";
+                window.BB_DICE.showToastNotification(`Codex: Scribing ${spellName} progress: ${completed}/${required}`);
               }, 1500);
             }
           }
@@ -4834,9 +4839,10 @@ window.BB_CHARACTER_SHEET = (() => {
           }
         }
         // Codex Scribing Progress (Long Rest)
+        // Codex Scribing Progress (Long Rest)
         if (char.class === "Mage" && char.scribingSpell && char.scribingSpell.spellId) {
           const progressInc = char.level >= 7 ? 2 : 1;
-          char.scribingSpell.completedRests += progressInc;
+          char.scribingSpell.completedRests = (parseInt(char.scribingSpell.completedRests) || 0) + progressInc;
           
           if (char.scribingSpell.completedRests >= char.scribingSpell.requiredRests) {
             if (!char.spells) char.spells = [];
@@ -4849,10 +4855,13 @@ window.BB_CHARACTER_SHEET = (() => {
               }, 1500);
             }
           } else {
+            const spellId = char.scribingSpell.spellId;
+            const completed = char.scribingSpell.completedRests;
+            const required = char.scribingSpell.requiredRests;
             if (window.BB_DICE && window.BB_DICE.showToastNotification) {
               setTimeout(() => {
-                const spellName = window.BB_DATABASE.SPELLS.find(s => s.id === char.scribingSpell.spellId)?.name || "Spell";
-                window.BB_DICE.showToastNotification(`Codex: Scribing ${spellName} progress: ${char.scribingSpell.completedRests}/${char.scribingSpell.requiredRests}`);
+                const spellName = window.BB_DATABASE.SPELLS.find(s => s.id === spellId)?.name || "Spell";
+                window.BB_DICE.showToastNotification(`Codex: Scribing ${spellName} progress: ${completed}/${required}`);
               }, 1500);
             }
           }
