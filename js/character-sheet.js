@@ -3995,6 +3995,7 @@ window.BB_CHARACTER_SHEET = (() => {
             window.BB_DICE.showToastNotification("Not enough attunement slots available!");
             return;
           }
+          if (!char.spells) char.spells = [];
           char.spells.push(spellId);
           char.attunement.used += window.BB_STATE.getSpellAttunementCost(char, spellData);
           window.BB_STATE.saveCharacter(char);
@@ -4838,6 +4839,7 @@ window.BB_CHARACTER_SHEET = (() => {
           char.scribingSpell.completedRests += progressInc;
           
           if (char.scribingSpell.completedRests >= char.scribingSpell.requiredRests) {
+            if (!char.spells) char.spells = [];
             char.spells.push(char.scribingSpell.spellId);
             const scribedSpellName = window.BB_DATABASE.SPELLS.find(s => s.id === char.scribingSpell.spellId)?.name || "Spell";
             delete char.scribingSpell;
