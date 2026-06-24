@@ -4670,22 +4670,7 @@ window.BB_DATABASE = {
       overchargeCost: "3 Stamina",
       overchargeDesc: "Trick Shot gains critical range +1."
     },
-    {
-      id: "shield_wall",
-      name: "Shield Wall",
-      class: "Vanguard",
-      actionType: "Ability",
-      type: "Defense",
-      attunement: 2,
-      cost: "6 Stamina",
-      actTime: "Action",
-      range: "Self",
-      components: "Manus, Vis, Shield",
-      duration: "1 Round",
-      description: "You form a defensive barrier with your shield. You gain +2 to your AC until the start of your next turn.",
-      overchargeCost: "3 Stamina",
-      overchargeDesc: "You gain an additional +2 to your AC."
-    },
+
     // --- VANGUARD CLASS LIST ---
     {
       id: "arc",
