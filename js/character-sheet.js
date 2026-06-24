@@ -1554,21 +1554,7 @@ window.BB_CHARACTER_SHEET = (() => {
                         }
                     }
 
-                    if (item && item.block && char.stances && char.stances.includes("Defensive Stance")) {
-                        item = JSON.parse(JSON.stringify(item));
-                        item.damageType = "Bludgeoning";
-                        item.damageStat = "Strength";
-                        if (item.block === 2) {
-                            item.damageDie = "1d4";
-                            item.grip = "Dual";
-                        } else if (item.block === 3) {
-                            item.damageDie = "1d6";
-                            item.grip = "Single";
-                        } else if (item.block >= 4) {
-                            item.damageDie = "1d8";
-                            item.grip = "Double";
-                        }
-                    }
+
 
                     let mightyPenalty = "";
                     if (item && item.grip === "Double" && (!item.properties || !item.properties.includes("Ranged")) && char.stances && char.stances.includes("Mighty Stance")) {
