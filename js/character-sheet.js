@@ -380,6 +380,12 @@ window.BB_CHARACTER_SHEET = (() => {
       speedBreakdown.push(`+10 (Monomania)`);
     }
 
+    // Traits: Fleetfooted
+    if (char.traits && char.traits.includes("Fleetfooted")) {
+      movementBonus += 10;
+      speedBreakdown.push(`+10 (Fleetfooted)`);
+    }
+
     char.movement = baseMovement + movementBonus;
 
     // Encumbrance Penalties
