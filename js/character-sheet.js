@@ -381,7 +381,7 @@ window.BB_CHARACTER_SHEET = (() => {
     }
 
     // Traits: Fleetfooted
-    if (char.traits && char.traits.includes("Fleetfooted")) {
+    if (char.talents && char.talents.includes("Fleetfooted")) {
       movementBonus += 10;
       speedBreakdown.push(`+10 (Fleetfooted)`);
     }
