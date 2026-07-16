@@ -997,7 +997,7 @@ window.BB_CHARACTER_SHEET = (() => {
         
         let advMode = getSkillAdvMode(char, sk.name);
         if (advMode === 2) displayName += ` <span style="color:var(--stamina-gold); font-size:0.7rem;">[ADV]</span>`;
-        if (advMode === -2 || advMode === -1) displayName += ` <span style="color:var(--danger-red); font-size:0.7rem;">[DIS]</span>`;
+        if (advMode === -2 || advMode === -1) displayName += ` <span style="color:var(--red); font-size:0.7rem;">[DIS]</span>`;
         
         let attrVal = window.BB_STATE.getComputedStat(char, displayAttr);
         const attrMod = window.BB_STATE.getModifier(attrVal);
