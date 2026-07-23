@@ -105,26 +105,27 @@ document.addEventListener("DOMContentLoaded", () => {
       </div>
   `;
 
-  // Features HTML
-  let classData = (window.BB_DATABASE.CLASSES || []).find(c => c.name === char.class);
-  let featuresHTML = `<div class="section"><div class="section-title">Class Features</div>`;
-  if (classData && classData.features) {
-      classData.features.forEach(f => {
-          if (char.level >= f.level) {
-              featuresHTML += `
-                  <div class="text-item">
-                      <div class="text-title">${f.name} (Lvl ${f.level})</div>
-                      <div class="text-desc">${f.desc.replace(/<br>/g, " ")}</div>
-                  </div>
-              `;
-          }
+  // Talents & Feats HTML (with descriptions)
+  let talentsHTML = `<div class="section"><div class="section-title">Talents & Feats</div>`;
+  if (char.talents) {
+      char.talents.forEach(tName => {
+          if (!tName) return;
+          const tData = window.BB_DATABASE.TALENTS.find(t => t.name === tName || tName.startsWith(t.name + " ("));
+          const desc = tData ? tData.description : "Talent description not found.";
+          talentsHTML += `<div class="text-item"><div class="text-title">${tName}</div><div class="text-desc">${desc}</div></div>`;
       });
-  } else {
-      featuresHTML += `<div>No features found.</div>`;
   }
-  featuresHTML += `</div>`;
+  if (char.feats) {
+      char.feats.forEach(fName => {
+          if (!fName) return;
+          const fData = window.BB_DATABASE.FEATS.find(f => f.name === fName || fName.startsWith(f.name + " ("));
+          const desc = fData ? fData.description : "Feat description not found.";
+          talentsHTML += `<div class="text-item"><div class="text-title">${fName}</div><div class="text-desc">${desc}</div></div>`;
+      });
+  }
+  talentsHTML += `</div>`;
 
-  // Page 1 Layout
+  // Page 1 Layout (Replaced Class Features with Talents & Feats)
   let page1 = `
       <div class="print-page">
           <div class="print-header">
@@ -137,7 +138,7 @@ document.addEventListener("DOMContentLoaded", () => {
           <div class="grid-container">
               <div>${skillsHTML}</div>
               <div>${combatHTML}</div>
-              <div>${featuresHTML}</div>
+              <div>${talentsHTML}</div>
           </div>
       </div>
   `;
@@ -168,19 +169,6 @@ document.addEventListener("DOMContentLoaded", () => {
   }
   bagHTML += `</div>`;
 
-  let talentsHTML = `<div class="section"><div class="section-title">Talents & Feats</div>`;
-  if (char.talents) {
-      char.talents.forEach(t => {
-          if (t) talentsHTML += `<div class="text-item"><div class="text-title">${t}</div><div class="text-desc">Talent</div></div>`;
-      });
-  }
-  if (char.feats) {
-      char.feats.forEach(f => {
-          if (f) talentsHTML += `<div class="text-item"><div class="text-title">${f}</div><div class="text-desc">Feat</div></div>`;
-      });
-  }
-  talentsHTML += `</div>`;
-
   let notesHTML = `<div class="section"><div class="section-title">Background & Notes</div>`;
   if (char.backgroundTraits) {
       notesHTML += `<div class="text-item"><div class="text-title">Trait</div><div class="text-desc">${char.backgroundTraits.trait || ''}</div></div>`;
@@ -192,7 +180,7 @@ document.addEventListener("DOMContentLoaded", () => {
   notesHTML += `</div>`;
 
 
-  // Page 2 Layout
+  // Page 2 Layout (Now 2 columns instead of 3 since Talents moved)
   let page2 = `
       <div class="page-break"></div>
       <div class="print-page">
@@ -201,9 +189,8 @@ document.addEventListener("DOMContentLoaded", () => {
                   <div class="char-name">${char.name || 'Unnamed Character'} - Continued</div>
               </div>
           </div>
-          <div class="grid-container">
+          <div class="grid-container" style="grid-template-columns: 1fr 1fr;">
               <div>${equipHTML}${bagHTML}</div>
-              <div>${talentsHTML}</div>
               <div>${notesHTML}</div>
           </div>
       </div>
