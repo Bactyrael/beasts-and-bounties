@@ -54,9 +54,16 @@ document.addEventListener("DOMContentLoaded", () => {
   statsHTML += `</div>`;
 
   // Build Skills HTML
-  const dbSkills = window.BB_DATABASE.SKILLS || [];
+  const skillsList = [
+    { name: "Acrobatics", attr: "Dex" }, { name: "Athletics", attr: "Str" }, { name: "Awareness", attr: "Wis" },
+    { name: "Brawn", attr: "Str" }, { name: "Browbeat", attr: "Str" }, { name: "Bushcraft", attr: "Wis" },
+    { name: "Commerce", attr: "Lck" }, { name: "Concentration", attr: "Con" }, { name: "Diplomacy", attr: "Lck" },
+    { name: "Endurance", attr: "Con" }, { name: "Investigation", attr: "Int" }, { name: "Knowledge", attr: "Int" },
+    { name: "Linguistics", attr: "Int" }, { name: "Medicine", attr: "Wis" }, { name: "Performance", attr: "Lck" },
+    { name: "Sleight of Hand", attr: "Dex" }, { name: "Sneak", attr: "Dex" }, { name: "Tolerance", attr: "Con" }
+  ];
   let skillsHTML = `<div class="section"><div class="section-title">Skills</div>`;
-  dbSkills.forEach(sk => {
+  skillsList.forEach(sk => {
       const isTrained = char.skills && char.skills[sk.name];
       const attrVal = getStat(sk.attr) || 0;
       const baseMod = window.BB_STATE.getModifier ? window.BB_STATE.getModifier(attrVal) : Math.floor((attrVal - 10)/2);
@@ -147,6 +154,19 @@ document.addEventListener("DOMContentLoaded", () => {
   let equipHTML = `<div class="section"><div class="section-title">Equipment</div>`;
   if (char.equipment) {
       Object.keys(char.equipment).forEach(slot => {
+          if (slot === 'coins') {
+              const coins = char.equipment.coins;
+              const coinStrs = [];
+              if (coins.gold) coinStrs.push(`${coins.gold} GP`);
+              if (coins.silver) coinStrs.push(`${coins.silver} SP`);
+              if (coins.bronze) coinStrs.push(`${coins.bronze} BP`);
+              if (coins.platinum) coinStrs.push(`${coins.platinum} PP`);
+              if (coins.crystal) coinStrs.push(`${coins.crystal} CP`);
+              if (coinStrs.length > 0) {
+                  equipHTML += `<div class="text-item"><span class="text-title">Coins:</span> <span class="text-desc">${coinStrs.join(', ')}</span></div>`;
+              }
+              return;
+          }
           if (char.equipment[slot]) {
               equipHTML += `
                   <div class="text-item">
