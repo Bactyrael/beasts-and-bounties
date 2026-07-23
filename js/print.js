@@ -180,11 +180,19 @@ document.addEventListener("DOMContentLoaded", () => {
   equipHTML += `</div>`;
 
   let bagHTML = `<div class="section"><div class="section-title">Inventory (Bag)</div>`;
-  if (char.inventory && char.inventory.length > 0) {
-      char.inventory.forEach(item => {
-          bagHTML += `<div class="text-item"><span class="text-desc">${item.qty}x ${item.name}</span></div>`;
+  let hasItems = false;
+  if (char.inventorySlots && char.inventorySlots.length > 0) {
+      char.inventorySlots.forEach(item => {
+          if (!item || item === "") return;
+          hasItems = true;
+          if (typeof item === "string") {
+              bagHTML += `<div class="text-item"><span class="text-desc">1x ${item}</span></div>`;
+          } else {
+              bagHTML += `<div class="text-item"><span class="text-desc">${item.quantity || 1}x ${item.name}</span></div>`;
+          }
       });
-  } else {
+  }
+  if (!hasItems) {
       bagHTML += `<div class="text-item"><span class="text-desc">Bag is empty.</span></div>`;
   }
   bagHTML += `</div>`;
