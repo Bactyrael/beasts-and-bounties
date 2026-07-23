@@ -814,6 +814,7 @@ window.BB_CHARACTER_SHEET = (() => {
             </div>
           </div>
           <button class="btn btn-primary btn-xs info-tooltip-trigger" id="fortune-roll-btn" style="padding:4px 8px; font-size:0.75rem; flex:1;" data-html="<h4>Fortune Roll</h4><p style='margin:0; font-size:0.85rem; color:#fff;'>Roll a d100 + your Luck modifier to discover what you find!</p>">Fortune</button>
+          <a href="print.html?id=${char.id}" target="_blank" class="btn btn-secondary btn-xs" style="padding:4px 8px; font-size:0.75rem; flex:1; text-align:center; text-decoration:none; display:flex; align-items:center; justify-content:center; border:1px solid #555; background:rgba(0,0,0,0.8); color:var(--text-light);"><i class="fas fa-print"></i></a>
         </div>
       </div>
 
