@@ -32,17 +32,17 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Build Stats HTML
   const stats = [
-    { key: "str", label: "Strength" },
-    { key: "dex", label: "Dexterity" },
-    { key: "con", label: "Constitution" },
-    { key: "int", label: "Intelligence" },
-    { key: "wis", label: "Wisdom" },
-    { key: "lck", label: "Luck" }
+    { key: "Str", label: "Strength" },
+    { key: "Dex", label: "Dexterity" },
+    { key: "Con", label: "Constitution" },
+    { key: "Int", label: "Intelligence" },
+    { key: "Wis", label: "Wisdom" },
+    { key: "Lck", label: "Luck" }
   ];
 
   let statsHTML = `<div class="stats-row">`;
   stats.forEach(s => {
-      const val = getStat(s.key);
+      const val = getStat(s.key) || 0;
       statsHTML += `
           <div class="stat-box">
               <div class="stat-label">${s.label}</div>
@@ -58,9 +58,9 @@ document.addEventListener("DOMContentLoaded", () => {
   let skillsHTML = `<div class="section"><div class="section-title">Skills</div>`;
   dbSkills.forEach(sk => {
       const isTrained = char.skills && char.skills[sk.name];
-      const attrVal = getStat(sk.attr.toLowerCase());
+      const attrVal = getStat(sk.attr) || 0;
       const baseMod = window.BB_STATE.getModifier ? window.BB_STATE.getModifier(attrVal) : Math.floor((attrVal - 10)/2);
-      const profBonus = Math.max(1, Math.floor(char.level / 4) + 1);
+      const profBonus = Math.max(1, Math.floor((char.level || 1) / 4) + 1);
       const totalMod = baseMod + (isTrained ? profBonus : 0);
       const modStr = totalMod >= 0 ? `+${totalMod}` : `${totalMod}`;
       skillsHTML += `
@@ -131,7 +131,7 @@ document.addEventListener("DOMContentLoaded", () => {
           <div class="print-header">
               <div>
                   <div class="char-name">${char.name || 'Unnamed Character'}</div>
-                  <div class="char-subtitle">Level ${char.level} ${char.species} ${char.class}</div>
+                  <div class="char-subtitle">Level ${char.level} ${char.race || ''} ${char.class || ''}</div>
               </div>
           </div>
           ${statsHTML}
