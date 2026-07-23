@@ -1114,6 +1114,7 @@ window.BB_CHARACTER_SHEET = (() => {
             <div class="card glass" style="flex:1; display:flex; flex-direction:column; padding:15px; border-radius:8px; border:1px solid rgba(255,255,255,0.1); overflow:hidden;">
               <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
                 <h3 class="card-header-sm" style="margin:0;">Skills</h3>
+                <a href="print.html?id=${char.id}" target="_blank" class="btn btn-secondary btn-xs" style="padding:2px 6px; font-size:0.75rem; text-decoration:none; display:flex; align-items:center; gap:4px; border:1px solid rgba(255,255,255,0.2); border-radius:4px; background:rgba(0,0,0,0.5); color:var(--text-light);" title="Print Character Sheet"><i class="fas fa-print"></i> Print</a>
               </div>
               <div class="skills-list-container" style="flex:1; display:grid; grid-template-columns: 1fr; grid-auto-rows: max-content; gap:4px; overflow-y:auto; overflow-x:hidden;">
                 ${skillsHTML}
