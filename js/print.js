@@ -74,9 +74,8 @@ document.addEventListener("DOMContentLoaded", () => {
       const modStr = totalMod >= 0 ? `+${totalMod}` : `${totalMod}`;
       skillsHTML += `
           <div class="skill-row">
-              <div class="skill-dot ${isTrained ? 'trained' : ''}"></div>
               <div class="skill-mod-box">${modStr}</div>
-              <div class="skill-name">${sk.name} ${isTrained ? '<span style="font-size:5pt; color:#666;">[ADV]</span>' : ''}</div>
+              <div class="skill-name">${sk.name}</div>
               <div class="skill-attr">(${sk.attr})</div>
           </div>
       `;
