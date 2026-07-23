@@ -3,7 +3,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const charId = urlParams.get('id');
   
   if (!charId) {
-      document.getElementById("print-root").innerHTML = "<div style='text-align:center; padding:50px;'><h2>No character ID provided.</h2><p>Please open this page from the character sheet Print button.</p></div>";
+      document.getElementById("print-root").innerHTML = "<div style='text-align:center; padding:50px;'><h2>No character ID provided.</h2></div>";
       return;
   }
 
@@ -15,45 +15,32 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
   }
 
-  // Force recalculation to ensure derived stats are present
-  if (window.BB_STATE.recalculateCharacter) {
-      window.BB_STATE.recalculateCharacter(char);
-  }
+  if (window.BB_STATE.recalculateCharacter) window.BB_STATE.recalculateCharacter(char);
 
-  // Helper for modifiers
   const getModStr = (val) => {
       const mod = window.BB_STATE.getModifier ? window.BB_STATE.getModifier(val) : Math.floor((val - 10) / 2);
       return mod >= 0 ? `+${mod}` : `${mod}`;
   };
+  const getStat = (key) => window.BB_STATE.getComputedStat ? window.BB_STATE.getComputedStat(char, key) : (char.stats[key] || 10);
 
-  const getStat = (statKey) => {
-      return window.BB_STATE.getComputedStat ? window.BB_STATE.getComputedStat(char, statKey) : char.stats[statKey];
-  };
-
-  // Build Stats HTML
-  const stats = [
-    { key: "Str", label: "Strength" },
-    { key: "Dex", label: "Dexterity" },
-    { key: "Con", label: "Constitution" },
-    { key: "Int", label: "Intelligence" },
-    { key: "Wis", label: "Wisdom" },
-    { key: "Lck", label: "Luck" }
+  // 1. STATS (Vertical)
+  const statsList = [
+    { key: "Str", label: "Strength" }, { key: "Dex", label: "Dexterity" }, { key: "Con", label: "Constitution" },
+    { key: "Int", label: "Intelligence" }, { key: "Wis", label: "Wisdom" }, { key: "Lck", label: "Luck" }
   ];
-
-  let statsHTML = `<div class="stats-row">`;
-  stats.forEach(s => {
-      const val = getStat(s.key) || 0;
+  let statsHTML = ``;
+  statsList.forEach(s => {
+      const val = getStat(s.key);
       statsHTML += `
-          <div class="stat-box">
-              <div class="stat-label">${s.label}</div>
-              <div class="stat-val">${getModStr(val)}</div>
-              <div style="font-size:8pt; color:#666;">Score: ${val}</div>
+          <div class="stat-block">
+              <div class="stat-title">${s.label}</div>
+              <div class="stat-mod">${getModStr(val)}</div>
+              <div class="stat-score">${val}</div>
           </div>
       `;
   });
-  statsHTML += `</div>`;
 
-  // Build Skills HTML
+  // 2. SKILLS (Rows)
   const skillsList = [
     { name: "Acrobatics", attr: "Dex" }, { name: "Athletics", attr: "Str" }, { name: "Awareness", attr: "Wis" },
     { name: "Brawn", attr: "Str" }, { name: "Browbeat", attr: "Str" }, { name: "Bushcraft", attr: "Wis" },
@@ -62,97 +49,60 @@ document.addEventListener("DOMContentLoaded", () => {
     { name: "Linguistics", attr: "Int" }, { name: "Medicine", attr: "Wis" }, { name: "Performance", attr: "Lck" },
     { name: "Sleight of Hand", attr: "Dex" }, { name: "Sneak", attr: "Dex" }, { name: "Tolerance", attr: "Con" }
   ];
-  let skillsHTML = `<div class="section"><div class="section-title">Skills</div>`;
+  let skillsHTML = ``;
   skillsList.forEach(sk => {
       const isTrained = char.skills && char.skills[sk.name];
-      const attrVal = getStat(sk.attr) || 0;
+      const attrVal = getStat(sk.attr) || 10;
       const baseMod = window.BB_STATE.getModifier ? window.BB_STATE.getModifier(attrVal) : Math.floor((attrVal - 10)/2);
       const profBonus = Math.max(1, Math.floor((char.level || 1) / 4) + 1);
       const totalMod = baseMod + (isTrained ? profBonus : 0);
       const modStr = totalMod >= 0 ? `+${totalMod}` : `${totalMod}`;
       skillsHTML += `
-          <div class="skill-item">
-              <span class="skill-name">${isTrained ? '&#9679;' : '&#9675;'} ${sk.name} <span style="font-size:7pt; color:#666;">(${sk.attr})</span></span>
-              <span class="skill-mod">${modStr}</span>
+          <div class="skill-row">
+              <div class="skill-dot ${isTrained ? 'trained' : ''}"></div>
+              <div class="skill-mod-box">${modStr}</div>
+              <div class="skill-name">${sk.name}</div>
+              <div class="skill-attr">(${sk.attr})</div>
           </div>
       `;
   });
-  skillsHTML += `</div>`;
 
-  // Combat Stats HTML
-  let combatHTML = `
-      <div class="section">
-          <div class="section-title">Combat & Vitals</div>
-          <div class="combat-stats">
-              <div class="combat-box">
-                  <div class="combat-label">HP Max</div>
-                  <div class="combat-val">${char.hp ? char.hp.total : 0}</div>
-              </div>
-              <div class="combat-box">
-                  <div class="combat-label">Stamina</div>
-                  <div class="combat-val">${char.sp ? char.sp.total : 0}</div>
-              </div>
-              <div class="combat-box">
-                  <div class="combat-label">Mana</div>
-                  <div class="combat-val">${char.mp ? char.mp.total : 0}</div>
-              </div>
-              <div class="combat-box">
-                  <div class="combat-label">Speed</div>
-                  <div class="combat-val">${char.movement || 30} ft</div>
-              </div>
-              <div class="combat-box">
-                  <div class="combat-label">Defense (DEF)</div>
-                  <div class="combat-val">${char.defense || 10}</div>
-              </div>
-              <div class="combat-box">
-                  <div class="combat-label">Resilience (RES)</div>
-                  <div class="combat-val">${char.resilience || 10}</div>
-              </div>
-          </div>
-      </div>
-  `;
+  // 3. ATTACKS
+  let attacksHTML = `<table class="attacks-table"><tr><th>NAME</th><th>ATK BONUS</th><th>DAMAGE / TYPE</th></tr>`;
+  const weps = [];
+  if (char.equipment && char.equipment.mainHand) weps.push(char.equipment.mainHand);
+  if (char.equipment && char.equipment.offHand) weps.push(char.equipment.offHand);
+  
+  if (weps.length === 0) {
+      attacksHTML += `<tr><td class="atk-name">Unarmed Strike</td><td>-</td><td>-</td></tr>`;
+  } else {
+      weps.forEach(w => {
+          attacksHTML += `<tr><td class="atk-name">${w}</td><td>(See Weapon)</td><td>(See Weapon)</td></tr>`;
+      });
+  }
+  attacksHTML += `</table>`;
 
-  // Talents & Feats HTML (with descriptions)
-  let talentsHTML = `<div class="section"><div class="section-title">Talents & Feats</div>`;
+  // 4. TALENTS & FEATS
+  let talentsHTML = ``;
   if (char.talents) {
       char.talents.forEach(tName => {
           if (!tName) return;
           const tData = window.BB_DATABASE.TALENTS.find(t => t.name === tName || tName.startsWith(t.name + " ("));
-          const desc = tData ? tData.description : "Talent description not found.";
-          talentsHTML += `<div class="text-item"><div class="text-title">${tName}</div><div class="text-desc">${desc}</div></div>`;
+          talentsHTML += `<div class="text-entry"><strong>${tName} (Talent)</strong><span>${tData ? tData.description : ''}</span></div>`;
       });
   }
   if (char.feats) {
       char.feats.forEach(fName => {
           if (!fName) return;
           const fData = window.BB_DATABASE.FEATS.find(f => f.name === fName || fName.startsWith(f.name + " ("));
-          const desc = fData ? fData.description : "Feat description not found.";
-          talentsHTML += `<div class="text-item"><div class="text-title">${fName}</div><div class="text-desc">${desc}</div></div>`;
+          talentsHTML += `<div class="text-entry"><strong>${fName} (Feat)</strong><span>${fData ? fData.description : ''}</span></div>`;
       });
   }
-  talentsHTML += `</div>`;
 
-  // Page 1 Layout (Replaced Class Features with Talents & Feats)
-  let page1 = `
-      <div class="print-page">
-          <div class="print-header">
-              <div>
-                  <div class="char-name">${char.name || 'Unnamed Character'}</div>
-                  <div class="char-subtitle">Level ${char.level} ${char.race || ''} ${char.class || ''}</div>
-              </div>
-          </div>
-          ${statsHTML}
-          <div class="grid-container">
-              <div>${skillsHTML}</div>
-              <div>${combatHTML}</div>
-              <div>${talentsHTML}</div>
-          </div>
-      </div>
-  `;
-
-  // Inventory & Traits (Page 2)
-  let equipHTML = `<div class="section"><div class="section-title">Equipment</div>`;
+  // 5. INVENTORY & EQUIPMENT
+  let equipHTML = ``;
   if (char.equipment) {
+      equipHTML += `<table class="inv-table"><tr><th>Equipped Item</th><th>Slot</th></tr>`;
       Object.keys(char.equipment).forEach(slot => {
           if (slot === 'coins') {
               const coins = char.equipment.coins;
@@ -163,72 +113,119 @@ document.addEventListener("DOMContentLoaded", () => {
               if (coins.platinum) coinStrs.push(`${coins.platinum} PP`);
               if (coins.crystal) coinStrs.push(`${coins.crystal} CP`);
               if (coinStrs.length > 0) {
-                  equipHTML += `<div class="text-item"><span class="text-title">Coins:</span> <span class="text-desc">${coinStrs.join(', ')}</span></div>`;
+                  equipHTML += `<tr><td><strong>Coins</strong></td><td>${coinStrs.join(', ')}</td></tr>`;
               }
               return;
           }
           if (char.equipment[slot]) {
-              equipHTML += `
-                  <div class="text-item">
-                      <span class="text-title" style="text-transform:capitalize;">${slot}:</span> 
-                      <span class="text-desc">${char.equipment[slot]}</span>
-                  </div>
-              `;
+              equipHTML += `<tr><td style="font-weight:bold;">${char.equipment[slot]}</td><td style="text-transform:capitalize;">${slot}</td></tr>`;
           }
       });
+      equipHTML += `</table><br>`;
   }
-  equipHTML += `</div>`;
 
-  let bagHTML = `<div class="section"><div class="section-title">Inventory (Bag)</div>`;
+  let bagHTML = `<table class="inv-table"><tr><th>QTY</th><th>Bag Item</th></tr>`;
   let hasItems = false;
   if (char.inventorySlots && char.inventorySlots.length > 0) {
       char.inventorySlots.forEach(item => {
           if (!item || item === "") return;
           hasItems = true;
           if (typeof item === "string") {
-              bagHTML += `<div class="text-item"><span class="text-desc">1x ${item}</span></div>`;
+              bagHTML += `<tr><td>1</td><td>${item}</td></tr>`;
           } else {
-              bagHTML += `<div class="text-item"><span class="text-desc">${item.quantity || 1}x ${item.name}</span></div>`;
+              bagHTML += `<tr><td>${item.quantity || 1}</td><td>${item.name}</td></tr>`;
           }
       });
   }
-  if (!hasItems) {
-      bagHTML += `<div class="text-item"><span class="text-desc">Bag is empty.</span></div>`;
-  }
-  bagHTML += `</div>`;
+  if (!hasItems) bagHTML += `<tr><td colspan="2">Bag is empty.</td></tr>`;
+  bagHTML += `</table>`;
 
-  let notesHTML = `<div class="section"><div class="section-title">Background & Notes</div>`;
+  // 6. BACKGROUND
+  let backgroundHTML = ``;
   if (char.backgroundTraits) {
-      notesHTML += `<div class="text-item"><div class="text-title">Trait</div><div class="text-desc">${char.backgroundTraits.trait || ''}</div></div>`;
-      notesHTML += `<div class="text-item"><div class="text-title">Ideal</div><div class="text-desc">${char.backgroundTraits.ideal || ''}</div></div>`;
-      notesHTML += `<div class="text-item"><div class="text-title">Bond</div><div class="text-desc">${char.backgroundTraits.bond || ''}</div></div>`;
-      notesHTML += `<div class="text-item"><div class="text-title">Flaw</div><div class="text-desc">${char.backgroundTraits.flaw || ''}</div></div>`;
+      backgroundHTML += `
+        <div class="section-box" style="margin-bottom:20px; padding-bottom:25px;"><div class="section-label-top">PERSONALITY TRAIT</div><div style="padding:10px 5px;">${char.backgroundTraits.trait || ''}</div></div>
+        <div class="section-box" style="margin-bottom:20px; padding-bottom:25px;"><div class="section-label-top">IDEAL</div><div style="padding:10px 5px;">${char.backgroundTraits.ideal || ''}</div></div>
+        <div class="section-box" style="margin-bottom:20px; padding-bottom:25px;"><div class="section-label-top">BOND</div><div style="padding:10px 5px;">${char.backgroundTraits.bond || ''}</div></div>
+        <div class="section-box" style="margin-bottom:20px; padding-bottom:25px;"><div class="section-label-top">FLAW</div><div style="padding:10px 5px;">${char.backgroundTraits.flaw || ''}</div></div>
+      `;
   }
-  notesHTML += `<div class="text-item" style="margin-top:10px;"><div class="text-title">Notes</div><div class="text-desc">${(char.notes || '').replace(/\n/g, "<br>")}</div></div>`;
-  notesHTML += `</div>`;
+  backgroundHTML += `<div class="section-box" style="min-height:200px;"><div class="section-label-top">NOTES / APPEARANCE</div><div style="padding:10px 5px;">${(char.notes || '').replace(/\n/g, '<br>')}</div></div>`;
 
 
-  // Page 2 Layout (Now 2 columns instead of 3 since Talents moved)
+  // PAGE 1 ASSEMBLY
+  let page1 = `
+      <div class="print-page">
+          <div class="header-container">
+              <div class="char-name-box">
+                  <h1>${char.name || 'Unnamed'}</h1>
+                  <label>CHARACTER NAME</label>
+              </div>
+              <div class="header-details">
+                  <div class="header-field"><span>${char.class || ''} ${char.level || 1}</span><label>CLASS & LEVEL</label></div>
+                  <div class="header-field"><span>${char.race || ''}</span><label>SPECIES</label></div>
+                  <div class="header-field"><span></span><label>BACKGROUND</label></div>
+                  <div class="header-field"><span></span><label>PLAYER NAME</label></div>
+              </div>
+          </div>
+          
+          <div class="main-body">
+              <div class="col-stats">${statsHTML}</div>
+              
+              <div class="col-skills">
+                  <div class="section-box">
+                      <div class="section-label-top">SKILLS</div>
+                      <div style="margin-top:10px;">${skillsHTML}</div>
+                  </div>
+              </div>
+              
+              <div class="col-main">
+                  <div class="vitals-grid">
+                      <div class="shield-border"><div class="vital-value">${char.defense || 10}</div><div class="vital-label">Armor<br>Class</div></div>
+                      <div class="vital-box"><div class="vital-value">${char.hp ? char.hp.total : 0}</div><div class="vital-label">HP Max</div></div>
+                      <div class="vital-box"><div class="vital-value">${char.sp ? char.sp.total : 0}</div><div class="vital-label">Stamina</div></div>
+                      
+                      <div class="shield-border"><div class="vital-value">${char.resilience || 10}</div><div class="vital-label">Resilience</div></div>
+                      <div class="vital-box"><div class="vital-value">${char.mp ? char.mp.total : 0}</div><div class="vital-label">Mana</div></div>
+                      <div class="vital-box"><div class="vital-value">${char.movement || 30} ft</div><div class="vital-label">Speed</div></div>
+                  </div>
+                  
+                  <div class="section-box">
+                      <div class="section-label-top">Weapon Attacks</div>
+                      <div style="margin-top:5px;">${attacksHTML}</div>
+                  </div>
+                  
+                  <div class="section-box">
+                      <div class="section-label-top">Features & Traits</div>
+                      <div style="margin-top:5px;">${talentsHTML}</div>
+                  </div>
+              </div>
+          </div>
+      </div>
+  `;
+
+  // PAGE 2 ASSEMBLY
   let page2 = `
       <div class="page-break"></div>
       <div class="print-page">
-          <div class="print-header">
-              <div>
-                  <div class="char-name">${char.name || 'Unnamed Character'} - Continued</div>
-              </div>
+          <div class="header-container" style="padding:10px; justify-content:center;">
+              <h2 style="font-size:16pt; margin:0;">${char.name || 'Unnamed'} - Continued</h2>
           </div>
-          <div class="grid-container" style="grid-template-columns: 1fr 1fr;">
-              <div>${equipHTML}${bagHTML}</div>
-              <div>${notesHTML}</div>
+          <div class="main-body">
+              <div class="col-half">
+                  <div class="section-box">
+                      <div class="section-label-top">Equipment & Inventory</div>
+                      <div style="margin-top:10px;">${equipHTML}${bagHTML}</div>
+                  </div>
+              </div>
+              <div class="col-half">
+                  ${backgroundHTML}
+              </div>
           </div>
       </div>
   `;
 
   document.getElementById("print-root").innerHTML = page1 + page2;
 
-  // Auto-print
-  setTimeout(() => {
-      window.print();
-  }, 500);
-
+  setTimeout(() => window.print(), 500);
 });

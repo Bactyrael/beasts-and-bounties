@@ -1,4 +1,4 @@
-/* Print Specific Styles */
+/* Print Specific Styles - D&D Beyond Classic Layout */
 @page {
   size: letter portrait;
   margin: 0.5in;
@@ -14,13 +14,13 @@ body {
   background-color: #fff;
   margin: 0;
   padding: 0;
-  font-size: 10pt;
-  line-height: 1.3;
+  font-size: 9pt;
+  line-height: 1.2;
 }
 
 h1, h2, h3, h4, h5, h6 {
   font-family: 'Outfit', sans-serif;
-  margin: 0 0 5px 0;
+  margin: 0;
   color: #000;
 }
 
@@ -35,149 +35,285 @@ h1, h2, h3, h4, h5, h6 {
   margin: 0 auto;
 }
 
-/* Grid System */
-.grid-container {
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
-  gap: 15px;
-  margin-top: 15px;
-}
-
 /* Header */
-.print-header {
-  border-bottom: 2px solid #000;
-  padding-bottom: 10px;
-  margin-bottom: 15px;
+.header-container {
   display: flex;
   justify-content: space-between;
-  align-items: flex-end;
+  margin-bottom: 20px;
+  border: 2px solid #000;
+  padding: 10px;
+  border-radius: 8px;
+  background: #fdfdfd;
 }
 
-.char-name {
+.char-name-box {
+  width: 35%;
+  border-bottom: 2px solid #000;
+  padding-bottom: 5px;
+}
+
+.char-name-box h1 {
   font-size: 24pt;
   font-weight: 800;
 }
 
-.char-subtitle {
-  font-size: 12pt;
-  color: #333;
+.char-name-box label {
+  font-size: 7pt;
+  font-weight: bold;
+  text-transform: uppercase;
 }
+
+.header-details {
+  width: 60%;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.header-field {
+  flex: 1 1 45%;
+  border-bottom: 1px solid #000;
+  padding-bottom: 2px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+
+.header-field span {
+  font-size: 11pt;
+}
+
+.header-field label {
+  font-size: 6pt;
+  font-weight: bold;
+  color: #555;
+  text-transform: uppercase;
+}
+
+/* Layout Columns */
+.main-body {
+  display: flex;
+  gap: 15px;
+}
+
+.col-stats { width: 15%; }
+.col-skills { width: 30%; }
+.col-main { width: 55%; display: flex; flex-direction: column; gap: 15px; }
+
+.col-half { width: 50%; display: flex; flex-direction: column; gap: 15px; }
 
 /* Sections */
-.section {
-  border: 1px solid #000;
+.section-box {
+  border: 2px solid #000;
+  border-radius: 8px;
   padding: 10px;
-  border-radius: 4px;
-  margin-bottom: 15px;
+  position: relative;
+  background: #fff;
 }
 
-.section-title {
-  background-color: #eee;
-  padding: 5px;
-  font-size: 12pt;
-  font-weight: 700;
-  text-transform: uppercase;
-  border-bottom: 1px solid #000;
-  margin: -10px -10px 10px -10px;
-  border-radius: 4px 4px 0 0;
-}
-
-/* Core Stats Row */
-.stats-row {
-  display: flex;
-  justify-content: space-between;
-  text-align: center;
-  margin-bottom: 10px;
-}
-
-.stat-box {
-  border: 1px solid #000;
-  border-radius: 4px;
-  padding: 5px;
-  width: 30%;
-}
-
-.stat-val {
-  font-size: 16pt;
+.section-label-bottom {
+  position: absolute;
+  bottom: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #fff;
+  padding: 0 8px;
+  font-size: 7pt;
   font-weight: bold;
-}
-
-.stat-label {
-  font-size: 8pt;
   text-transform: uppercase;
-  font-weight: 600;
-  color: #555;
+  letter-spacing: 1px;
 }
 
-/* Skills List */
-.skill-item {
+.section-label-top {
+  position: absolute;
+  top: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #fff;
+  padding: 0 8px;
+  font-size: 7pt;
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+/* Vertical Stats */
+.stat-block {
+  border: 2px solid #000;
+  border-radius: 8px;
+  text-align: center;
+  margin-bottom: 15px;
+  padding: 5px;
+  position: relative;
+}
+
+.stat-title {
+  font-size: 7pt;
+  font-weight: bold;
+  text-transform: uppercase;
+  margin-bottom: 5px;
+}
+
+.stat-mod {
+  font-size: 20pt;
+  font-weight: bold;
+  margin: 5px 0;
+}
+
+.stat-score {
+  font-size: 10pt;
+  border: 1px solid #000;
+  border-radius: 50%;
+  width: 25px;
+  height: 25px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  position: absolute;
+  bottom: -12px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #fff;
+}
+
+/* Skills */
+.skill-row {
   display: flex;
-  justify-content: space-between;
-  border-bottom: 1px solid #ccc;
-  padding: 3px 0;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.skill-dot {
+  width: 10px;
+  height: 10px;
+  border: 1px solid #000;
+  border-radius: 50%;
+  margin-right: 5px;
+}
+.skill-dot.trained {
+  background-color: #000;
+}
+
+.skill-mod-box {
+  border-bottom: 1px solid #000;
+  width: 20px;
+  text-align: center;
+  font-weight: bold;
+  margin-right: 5px;
 }
 
 .skill-name {
-  font-weight: 500;
+  font-size: 8.5pt;
+  flex: 1;
 }
 
-.skill-mod {
-  font-weight: bold;
-}
-
-/* Combat Stats */
-.combat-stats {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
-  margin-bottom: 15px;
-}
-
-.combat-box {
-  border: 1px solid #000;
-  padding: 8px;
-  text-align: center;
-  border-radius: 4px;
-}
-
-.combat-val {
-  font-size: 14pt;
-  font-weight: bold;
-}
-
-.combat-label {
-  font-size: 9pt;
-  font-weight: 600;
+.skill-attr {
+  font-size: 6pt;
+  color: #666;
   text-transform: uppercase;
 }
 
-/* Attacks */
-.attack-item {
-  border: 1px solid #ddd;
-  padding: 5px;
-  margin-bottom: 5px;
-  border-radius: 4px;
+/* Vitals Row */
+.vitals-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 10px;
 }
 
-.attack-title {
-  font-weight: bold;
+.vital-box {
+  border: 2px solid #000;
+  border-radius: 8px;
+  text-align: center;
+  padding: 10px 5px;
+  position: relative;
+}
+
+/* Shield Shape for DEF / RES */
+.shield-box {
+  position: relative;
+  width: 60px;
+  height: 70px;
+  margin: 0 auto;
+  clip-path: polygon(50% 100%, 100% 75%, 100% 0, 0 0, 0 75%);
+  border: 2px solid #000;
+  background: #fff;
   display: flex;
-  justify-content: space-between;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  /* CSS clip-path removes borders on some browsers, so we simulate it via a background hack or keep it simple */
 }
 
-.attack-detail {
-  font-size: 9pt;
-  color: #444;
+/* We'll use a simpler faux-shield or just round-bottom box to ensure print borders work */
+.shield-border {
+  border: 2px solid #000;
+  border-bottom-left-radius: 30px;
+  border-bottom-right-radius: 30px;
+  text-align: center;
+  padding: 10px 5px 20px 5px;
+  position: relative;
 }
 
-/* Simple List for Features / Inventory */
-.text-item {
-  margin-bottom: 8px;
-}
-.text-title {
+.vital-value {
+  font-size: 18pt;
   font-weight: bold;
 }
-.text-desc {
-  font-size: 9pt;
-  color: #222;
+
+.vital-label {
+  font-size: 7pt;
+  text-transform: uppercase;
+  font-weight: bold;
+  position: absolute;
+  bottom: 5px;
+  left: 0;
+  right: 0;
+  text-align: center;
+}
+
+/* Attacks Table */
+table.attacks-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+table.attacks-table th {
+  text-align: left;
+  font-size: 7pt;
+  color: #555;
+  border-bottom: 1px solid #000;
+  padding-bottom: 2px;
+}
+
+table.attacks-table td {
+  padding: 5px 0;
+  border-bottom: 1px solid #ddd;
+  font-size: 8.5pt;
+}
+
+.atk-name { font-weight: bold; }
+
+/* Text Lists */
+.text-entry { margin-bottom: 8px; }
+.text-entry strong { display: block; font-size: 9pt; }
+.text-entry span { font-size: 8pt; color: #222; }
+
+/* Inventory Table */
+table.inv-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+table.inv-table th {
+  text-align: left;
+  font-size: 7pt;
+  text-transform: uppercase;
+  border-bottom: 1px solid #000;
+  padding-bottom: 3px;
+}
+
+table.inv-table td {
+  padding: 4px 0;
+  border-bottom: 1px solid #eee;
+  font-size: 8.5pt;
 }
