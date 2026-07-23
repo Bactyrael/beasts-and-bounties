@@ -54,14 +54,29 @@ document.addEventListener("DOMContentLoaded", () => {
       const isTrained = char.skills && char.skills[sk.name];
       const attrVal = getStat(sk.attr) || 10;
       const baseMod = window.BB_STATE.getModifier ? window.BB_STATE.getModifier(attrVal) : Math.floor((attrVal - 10)/2);
-      const profBonus = Math.max(1, Math.floor((char.level || 1) / 4) + 1);
-      const totalMod = baseMod + (isTrained ? profBonus : 0);
+      
+      let totalMod = baseMod;
+      const classData = (window.BB_DATABASE.CLASSES || []).find(c => c.name === char.class) || {};
+      const isClassSkill = classData.skills && classData.skills.includes(sk.name);
+      if (isClassSkill) totalMod += 2;
+      
+      if (char.feats) {
+          char.feats.forEach(featName => {
+              if (featName && featName.startsWith("Expert (")) {
+                  const expertMatch = featName.match(/Expert \((.*?)\)/i);
+                  if (expertMatch && expertMatch[1].toLowerCase() === sk.name.toLowerCase()) {
+                      totalMod += Math.floor((char.level || 1) / 2);
+                  }
+              }
+          });
+      }
+
       const modStr = totalMod >= 0 ? `+${totalMod}` : `${totalMod}`;
       skillsHTML += `
           <div class="skill-row">
               <div class="skill-dot ${isTrained ? 'trained' : ''}"></div>
               <div class="skill-mod-box">${modStr}</div>
-              <div class="skill-name">${sk.name}</div>
+              <div class="skill-name">${sk.name} ${isTrained ? '<span style="font-size:5pt; color:#666;">[ADV]</span>' : ''}</div>
               <div class="skill-attr">(${sk.attr})</div>
           </div>
       `;
@@ -181,7 +196,7 @@ document.addEventListener("DOMContentLoaded", () => {
               
               <div class="col-main">
                   <div class="vitals-grid">
-                      <div class="shield-border"><div class="vital-value">${char.defense || 10}</div><div class="vital-label">Armor<br>Class</div></div>
+                      <div class="shield-border"><div class="vital-value">${char.defense || 10}</div><div class="vital-label">Defense</div></div>
                       <div class="vital-box"><div class="vital-value">${char.hp ? char.hp.total : 0}</div><div class="vital-label">HP Max</div></div>
                       <div class="vital-box"><div class="vital-value">${char.sp ? char.sp.total : 0}</div><div class="vital-label">Stamina</div></div>
                       
