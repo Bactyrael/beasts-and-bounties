@@ -610,6 +610,7 @@ console.log('Compendium script loaded');
           ${abilitiesHTML ? `<div class="detail-section"><h4>Passives</h4>${abilitiesHTML}</div>` : ''}
           ${attacksHTML ? `<div class="detail-section"><h4>Attacks</h4>${attacksHTML}</div>` : ''}
           ${actionsHTML ? `<div class="detail-section"><h4>Actions</h4>${actionsHTML}</div>` : ''}
+          ${item.description ? `<div class="detail-section"><h4>Description</h4><p>${item.description}</p></div>` : ''}
         </div>
       `;
     } else if (item.category === 'armor') {
