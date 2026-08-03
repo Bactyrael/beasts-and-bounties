@@ -8477,6 +8477,26 @@ window.BB_DATABASE = {
       actions: [
         { name: "Sublimation", desc: "As a Reaction, the fluxbeast changes from a solid form to a gaseous one. Until the start of its next turn, it becomes ethereal and is immune to physical damage." }
       ]
+    },
+    {
+      name: "Catalyte",
+      type: "Alchemical",
+      level: 10,
+      difficultyRating: 3,
+      hp: 105,
+      xp: 50,
+      defense: 0,
+      resilience: 0,
+      speed: "30 ft.",
+      stats: { Str: 1, Dex: 1, Con: 11, Int: 15, Wis: 1, Lck: 1 },
+      description: "Catalytes are living reagents, metallic liquid masses animated by decaying alchemical and arcane residues. Like quicksilver, it is constantly shifting as unstable energies ripple beneath the surface. Drawn to mana-rich objects and volatile compounds, they feed by accelerating reactions beyond safe limits, consuming the released energy to sustain themselves. In their presence, magic becomes erratic, spells distort, surge, or collapse unpredictably. Often formed in abandoned ruins or sites of magical catastrophe, catalytes behave like living chain reactions, turning controlled environments into chaos.",
+      abilities: [
+        { name: "Reactive Form", desc: "Whenever the catalyte takes damage from a non-physical damage type, it gains resistance to that damage type until the end of its next turn." },
+        { name: "Instability", desc: "Spells that resolve within 10 feet of the catalyte trigger an instability. The caster must succeed on an Intelligence saving throw (DC equal to 11) or the spell’s effects are altered, intensified, or redirected at the GM’s discretion." }
+      ],
+      attacks: [
+        { name: "Mana Torrent", desc: "As an Action, make a melee attack dealing 1d8 Magic damage." }
+      ]
     }
   ],
   BOOKS: [
