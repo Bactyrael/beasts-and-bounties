@@ -8454,6 +8454,29 @@ window.BB_DATABASE = {
       actions: [
         { name: "Engulf", desc: "As an Action, the mimesis attempts to envelop a creature within 5 feet. The target must succeed on a Strength saving throw (DC 14) or become restrained. A restrained creature can repeat the save at the end of its turns, ending the effect on a success." }
       ]
+    },
+    {
+      name: "Fluxbeast",
+      type: "Alchemical",
+      level: 25,
+      difficultyRating: 8,
+      hp: 220,
+      xp: 125,
+      defense: 4,
+      resilience: 1,
+      speed: "30 ft.",
+      stats: { Str: 18, Dex: 15, Con: 16, Int: 6, Wis: 12, Lck: 8 },
+      description: "A fluxbeast is an unsettling alchemical predator, its octopedal, cephalopod form gliding across land with unnatural grace. Its rubbery flesh constantly shifts in color, texture, and sheen, mimicking stone, foliage, or even polished steel as it brushes against its surroundings. Each of its eight limbs ends in serrated tendrils capable of slicing through armor with fluid precision. Its body seems slightly out of phase with reality, causing attacks to slip through it as though striking mist. When threatened, the creature can dissolve into a vaporous state, vanishing from harm before reforming moments later. Silent and patient, a fluxbeast stalks its prey with alien intelligence and unnerving adaptability.",
+      abilities: [
+        { name: "Crypsis", desc: "The fluxbeast changes in texture, color, and appearance with whatever it comes in contact with." },
+        { name: "Phase Shift", desc: "If a fluxbeast makes a saving throw to take half damage and succeeds, it instead takes no damage." }
+      ],
+      attacks: [
+        { name: "Serrated Tendrils", desc: "As an Action, the fluxbeast makes three melee attacks, dealing 1d12 slashing damage to up to three targets." }
+      ],
+      actions: [
+        { name: "Sublimation", desc: "As a Reaction, the fluxbeast changes from a solid form to a gaseous one. Until the start of its next turn, it becomes ethereal and is immune to physical damage." }
+      ]
     }
   ],
   BOOKS: [
