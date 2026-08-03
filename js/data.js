@@ -8430,6 +8430,30 @@ window.BB_DATABASE = {
       actions: [
         { name: "Consume Mana", desc: "As an Action, the ooze latches onto a creature it can sense with Arcane Scent within 5 feet. The target must succeed on a Strength saving throw (DC equal to 11) or take 2d6 Nature damage and lose 1d4 Mana Points. On a successful save, the target instead takes half as much damage and loses half as many Mana Points (rounded down). The ooze regains hit points equal to the damage dealt. If the target is out of mana, it instead takes an additional 1d6 Nature damage." }
       ]
+    },
+    {
+      name: "Mimesis",
+      type: "Alchemical",
+      level: 24,
+      difficultyRating: 8,
+      hp: 205,
+      xp: 60,
+      defense: 2,
+      resilience: 1,
+      speed: "15 ft.",
+      stats: { Str: 14, Dex: 8, Con: 15, Int: 12, Wis: 13, Lck: 10 },
+      description: "Mimesis are writhing masses of mutable flesh capable of reshaping themselves to mimic objects, surfaces, or creatures of similar size. Lurking in dungeons, ruins, and forgotten spaces, they remain perfectly still for long periods, disguising themselves as chests, doors, or debris to ambush unsuspecting prey. Their bodies ripple beneath the surface of their disguise, held together by unstable biological mimicry. When prey draws near, they lash out with tendrils, attempting to restrain and consume. Little is known of their origin; many believe them to be the result of failed transmutation, granted flesh and the ability to imitate form without understanding it.",
+      abilities: [
+        { name: "Amorphous", desc: "The mimesis can move through a space as narrow as 1 inch without being squeezed." },
+        { name: "Imitative Form", desc: "The mimesis can assume the shape of any object or creature of similar size. While motionless, it is indistinguishable from its chosen form. A creature must succeed on a Wisdom check (DC 13) to discern its true nature." },
+        { name: "Ambush Predator", desc: "The mimesis has an Advantage die on Attacks against creatures that have not yet acted in combat." }
+      ],
+      attacks: [
+        { name: "Pseudopod", desc: "As an Action, make a melee attack dealing 1d12 Bludgeoning damage." }
+      ],
+      actions: [
+        { name: "Engulf", desc: "As an Action, the mimesis attempts to envelop a creature within 5 feet. The target must succeed on a Strength saving throw (DC 14) or become restrained. A restrained creature can repeat the save at the end of its turns, ending the effect on a success." }
+      ]
     }
   ],
   BOOKS: [
