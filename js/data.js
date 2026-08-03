@@ -8406,6 +8406,30 @@ window.BB_DATABASE = {
       actions: [
         { name: "Consume", desc: "As an Action, the jelly latches onto a creature it can sense with Blood Scent within 5 feet. The target must succeed on a Constitution saving throw (DC equal to 11) or take 2d6 Nature damage and lose 1d4 Hit Points. On a successful save, the target instead takes half as much damage and loses half as many Hit Points (rounded down). The jelly regains hit points equal to the damage dealt. If the target is out of hit points, it instead has a Disadvantage die on its next Death Saving Throw." }
       ]
+    },
+    {
+      name: "Ooze",
+      type: "Ooze",
+      level: 12,
+      difficultyRating: 4,
+      hp: 130,
+      xp: 60,
+      defense: 0,
+      resilience: 0,
+      speed: "15 ft.",
+      stats: { Str: 1, Dex: 11, Con: 13, Int: 9, Wis: 1, Lck: 1 },
+      description: "Oozes are amorphous, semi-sentient masses of alchemically reactive sludge most often found in fetid wetlands, stagnant marshes, and regions saturated with unstable magic. Their bodies are typically deep blue, a result of volatile alkaline compounds suspended within their fluid mass. Oozes exhibit a predatory intelligence focused almost entirely on magical energy. They can detect arcane saturation in living creatures and will preferentially hunt spellcasters or magical beings. Others argue they are a form of natural, arcane scavenger organisms that emerge wherever magic becomes too dense or unstable to remain inert. Representing a terrifying truth: magical residue left unchecked does not remain but consumes.",
+      abilities: [
+        { name: "Amorphous", desc: "The ooze can move through a space as narrow as 1 inch without being squeezed." },
+        { name: "Alkaline Dissolution", desc: "A creature that touches the ooze or hits it with a melee attack while within 5 feet takes 1d6 Nature damage." },
+        { name: "Arcane Scent", desc: "Oozes can sense creatures who have cast spells within 60 feet. It prioritizes these targets over all others." }
+      ],
+      attacks: [
+        { name: "Pseudopod", desc: "As an Action, make a melee attack dealing 1d8 Nature damage." }
+      ],
+      actions: [
+        { name: "Consume Mana", desc: "As an Action, the ooze latches onto a creature it can sense with Arcane Scent within 5 feet. The target must succeed on a Strength saving throw (DC equal to 11) or take 2d6 Nature damage and lose 1d4 Mana Points. On a successful save, the target instead takes half as much damage and loses half as many Mana Points (rounded down). The ooze regains hit points equal to the damage dealt. If the target is out of mana, it instead takes an additional 1d6 Nature damage." }
+      ]
     }
   ],
   BOOKS: [
