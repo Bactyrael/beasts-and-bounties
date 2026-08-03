@@ -140,7 +140,7 @@ console.log('Compendium script loaded');
             <button class="compendium-tab ${activeTab === 'spells' ? 'active' : ''}" data-tab="spells">Spells &amp; Abilities</button>
             <button class="compendium-tab ${activeTab === 'equipment' ? 'active' : ''}" data-tab="equipment">Equipment</button>
             <button class="compendium-tab ${activeTab === 'items' ? 'active' : ''}" data-tab="items">Items</button>
-            <button class="compendium-tab ${activeTab === 'monsters' ? 'active' : ''}" data-tab="monsters">Monsters</button>
+            <button class="compendium-tab ${activeTab === 'monsters' ? 'active' : ''}" data-tab="monsters">Creatures</button>
             <button class="compendium-tab ${activeTab === 'feats' ? 'active' : ''}" data-tab="feats">Feats</button>
             <button class="compendium-tab ${activeTab === 'talents' ? 'active' : ''}" data-tab="talents">Talents</button>
           </div>
@@ -365,7 +365,7 @@ console.log('Compendium script loaded');
         else badgeColor = 'var(--gold)'; 
       }
       if (res.category === 'misc') { badgeColor = 'var(--amber)'; typeLabel = res.type ? res.type.toUpperCase() : 'ITEM'; }
-      if (res.category === 'monster') { badgeColor = 'var(--blood-red)'; typeLabel = 'MONSTER'; }
+      if (res.category === 'monster') { badgeColor = 'var(--blood-red)'; typeLabel = 'CREATURE'; }
       if (res.category === 'feat') { badgeColor = 'var(--emerald)'; typeLabel = 'FEAT'; }
       if (res.category === 'talent') { badgeColor = 'var(--stamina-gold)'; typeLabel = 'TALENT'; }
       const tagBadge = (res.category === 'spell' && res.tag) ? `<span class="card-tag tag-badge" style="background: var(--arcane-purple, #9b59b6);">${res.tag}</span>` : '';
