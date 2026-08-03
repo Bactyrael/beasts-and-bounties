@@ -8385,7 +8385,7 @@ window.BB_DATABASE = {
     },
     {
       name: "Jelly",
-      type: "Ooze",
+      type: "Alchemical",
       level: 12,
       difficultyRating: 4,
       hp: 130,
@@ -8409,7 +8409,7 @@ window.BB_DATABASE = {
     },
     {
       name: "Ooze",
-      type: "Ooze",
+      type: "Alchemical",
       level: 12,
       difficultyRating: 4,
       hp: 130,
