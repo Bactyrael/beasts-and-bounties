@@ -8382,6 +8382,30 @@ window.BB_DATABASE = {
       actions: [
         { name: "Consume Stamina", desc: "As an Action, the slime latches onto a creature within 5 feet. The target must succeed on a Dexterity saving throw (DC equal to 11) or take 2d6 Nature damage and lose 1d4 Stamina Points. On a successful save, the target instead takes half as much damage and loses half as many Stamina Points (rounded down). The slime regains hit points equal to the damage dealt. If the target is out of stamina, it instead takes an additional 1d6 Nature damage." }
       ]
+    },
+    {
+      name: "Jelly",
+      type: "Ooze",
+      level: 12,
+      difficultyRating: 4,
+      hp: 130,
+      xp: 60,
+      defense: 0,
+      resilience: 0,
+      speed: "15 ft.",
+      stats: { Str: 11, Dex: 1, Con: 13, Int: 1, Wis: 9, Lck: 1 },
+      description: "Jellies are red, gelatinous masses of enzymatic sludge that dissolve organic matter on contact. Unlike their more aggressive cousins, they are primarily scavengers, drifting slowly through dungeons, battlefields, and refuse-choked environments in search of decaying flesh. Their bodies exude a sticky, adhesive film, allowing them to cling to prey and creep toward vulnerable airways to suffocate living creatures when threatened or starving. Born from failed alchemical attempts to fuse living tissue with reactive compounds, jellies retain an instinctive pull toward vitality, gravitating toward the healthiest creatures and consuming rich biomass to sustain their sluggish forms.",
+      abilities: [
+        { name: "Amorphous", desc: "The jelly can move through a space as narrow as 1 inch without being squeezed." },
+        { name: "Enzymatic Digestion", desc: "A creature that touches the ooze or hits it with a melee attack while within 5 feet takes 1d6 Nature damage." },
+        { name: "Blood Scent", desc: "Jellies can sense creatures who have taken Hit Point damage within 60 feet. It prioritizes these targets over all others." }
+      ],
+      attacks: [
+        { name: "Pseudopod", desc: "As an Action, make a melee attack dealing 1d8 Nature damage." }
+      ],
+      actions: [
+        { name: "Consume", desc: "As an Action, the jelly latches onto a creature it can sense with Blood Scent within 5 feet. The target must succeed on a Constitution saving throw (DC equal to 11) or take 2d6 Nature damage and lose 1d4 Hit Points. On a successful save, the target instead takes half as much damage and loses half as many Hit Points (rounded down). The jelly regains hit points equal to the damage dealt. If the target is out of hit points, it instead has a Disadvantage die on its next Death Saving Throw." }
+      ]
     }
   ],
   BOOKS: [
