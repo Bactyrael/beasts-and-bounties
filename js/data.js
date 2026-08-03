@@ -8365,7 +8365,7 @@ window.BB_DATABASE = {
   MONSTERS: [
     {
       name: "Slime",
-      type: "Ooze",
+      type: "Alchemical",
       defense: 0,
       resilience: 0,
       speed: "15 ft.",
