@@ -178,8 +178,8 @@ document.addEventListener("DOMContentLoaded", () => {
               <div class="header-details">
                   <div class="header-field"><span>${char.class || ''} ${char.level || 1}</span><label>CLASS & LEVEL</label></div>
                   <div class="header-field"><span>${char.race || ''}</span><label>SPECIES</label></div>
-                  <div class="header-field"><span></span><label>BACKGROUND</label></div>
-                  <div class="header-field"><span></span><label>PLAYER NAME</label></div>
+                  <div class="header-field"><span>${char.background || 'None'}</span><label>BACKGROUND</label></div>
+                  <div class="header-field"><span>${char.playerName || ''}</span><label>PLAYER NAME</label></div>
               </div>
           </div>
           

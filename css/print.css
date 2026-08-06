@@ -11,9 +11,9 @@
 body {
   font-family: 'Inter', sans-serif;
   color: #000;
-  background-color: #fff;
+  background-color: #e0e0e0; /* Darker background for screen */
   margin: 0;
-  padding: 0;
+  padding: 20px;
   font-size: 9pt;
   line-height: 1.2;
 }
@@ -28,11 +28,41 @@ h1, h2, h3, h4, h5, h6 {
   page-break-before: always;
 }
 
+#print-root {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
 /* Page Container */
 .print-page {
-  width: 100%;
-  max-width: 100%;
-  margin: 0 auto;
+  width: 8.5in;
+  height: 11in;
+  margin: 0;
+  background: white;
+  box-shadow: 0 0 10px rgba(0,0,0,0.5);
+  padding: 0.5in;
+  overflow: hidden;
+}
+
+@media print {
+  body {
+    background-color: #fff;
+    padding: 0;
+  }
+  #print-root {
+    display: block;
+  }
+  .print-page {
+    width: 100%;
+    height: auto;
+    box-shadow: none;
+    padding: 0;
+    margin: 0 auto;
+  }
 }
 
 /* Header */
